@@ -3,10 +3,12 @@
 
 
 #==============================================================================
-# Bash Script Template
+# Bash Script: SED on md all files, git add, commit and push on all repos
+# Framework: own template, shellcheck
 # Roland Benz
 # 9.Nov.2018
 # -----------------------------------------------------------------------------
+# Task to run: choose option -t or --task with value task_1 { _2, _3, _4}
 # Debug info:
 #   For full debug mode start your script with the following command. 
 #   | DEBUG='t'  : gives output for the code before main() can call get_options()
@@ -52,14 +54,14 @@ version() { # this function is called from get_options()
   #============================================================================
   	
   # Everything between the two EOF's will be printed 
-	cat <<EOF
-Author: Roland Benz
-Version: 1
-Date: 9 Nov.2018
-EOF
+	cat << ____EOF
+    Author: Roland Benz
+    Version: 1
+    Date: 9 Nov.2018
+____EOF
 
-# return 1 to indicate that the script shall terminate
-return 1
+  # return 1 to indicate that the script shall terminate
+  return 1
 
 }
 # -----------------------------------------------------------------------------
@@ -81,13 +83,13 @@ doc() { #this function is called from get_options()
   #============================================================================
 	
   # Everything between the two EOF's will be printed 
-	cat <<EOF
-your script description goes here
-	and here
-			and here
-EOF
-# return 1 to indicate that the script shall terminate
-return 1
+	cat << ____EOF
+    your script description goes here
+	    and here
+			  and here
+____EOF
+    # return 1 to indicate that the script shall terminate
+    return 1
 
 }
 # -----------------------------------------------------------------------------
@@ -95,7 +97,7 @@ return 1
 
 get_options() { # this function is called from main()
 
-  #============================================================================
+  #===== =======================================================================
   # ---------------------------------------------------------------------------
   # Command line option parser
   # purpose:
@@ -107,10 +109,12 @@ get_options() { # this function is called from main()
   #     -v and --version :        to print version info (ex. for function call)
   #     -d and --doc:             to print doc info (ex. for function call)
   #     --verbose and --debug:    to print debug info (ex. for function call)
+  #     -t and --task             to start at task 1, 2, 3 or 4
   #     -o and --output-file      to set the outputfile (ex. for global variable)
   #     -o= and --output-file=    to set the outputfile (ex. for global variable)
   #
   # TODO: adapt the function for your own script options
+  #       only make an extra shift when an option takes a value (--option value)
   # ---------------------------------------------------------------------------
   [[ $DEBUG == 'y' ]] && echo "--$LINENO ${BASH_SOURCE[0]}:get_options" 
   # ---------------------------------------------------------------------------
@@ -129,42 +133,50 @@ get_options() { # this function is called from main()
     case "$key" in
       # This is a flag type option. Will catch either -f or --foo
       -v|--version)
-      # call function to print version info and return with 1
-      version
-      [[ $DEBUG == 'y' ]] && echo "--$LINENO ${BASH_SOURCE[0]}:printed version" 
-      return 1
+        # call function to print version info and return with 1
+        version
+        [[ $DEBUG == 'y' ]] && echo "--$LINENO ${BASH_SOURCE[0]}:printed version" 
+        return 1
       ;;
       # Also a flag type option. Will catch either -b or --bar
       -d|--doc)
-      # call function to print doc info and return with 1
-      doc
-      [[ $DEBUG == 'y' ]] && echo "--$LINENO ${BASH_SOURCE[0]}:printed doc" 
-      return 1
+        # call function to print doc info and return with 1
+        doc
+        [[ $DEBUG == 'y' ]] && echo "--$LINENO ${BASH_SOURCE[0]}:printed doc" 
+        return 1
       ;;
       # Also a flag type option. Will catch --verbose or --debug
       --verbose|--debug)
-      # 
-      DEBUG='y'
-      [[ $DEBUG == 'y' ]] && echo "--$LINENO ${BASH_SOURCE[0]}:set DEBUG='y'" 
+        # Set global variable DEBUG to 'y' 
+        DEBUG='y'
+        [[ $DEBUG == 'y' ]] && echo "--$LINENO ${BASH_SOURCE[0]}:set DEBUG='y'" 
+      ;;
+      # This is an arg value type option.
+      # Will catch -t value or --task value
+      -t|--task)
+        # Set global variable START_AT_TASK by shifting first
+        shift # past the key and to the value
+        START_AT_TASK="$1"
       ;;
       # This is an arg value type option.
       # Will catch -o value or --output-file value
       -o|--output-file)
-      shift # past the key and to the value
-      OUTPUTFILE="$1"
-      [[ $DEBUG == 'y' ]] && echo "--$LINENO ${BASH_SOURCE[0]}:set OUTPUTFILE" 
+        # Set the global variable OUTPUTFILE by shifting first
+        shift # past the key and to the value
+        OUTPUTFILE="$1"
+        [[ $DEBUG == 'y' ]] && echo "--$LINENO ${BASH_SOURCE[0]}:set OUTPUTFILE" 
       ;;
       # This is an arg=value type option. 
       # Will catch -o=value or --output-file=value
       -o=*|--output-file=*)
-      # No need to shift here since the value is part of the same string
-      OUTPUTFILE="${key#*=}"
-      [[ $DEBUG == 'y' ]] && echo "--$LINENO ${BASH_SOURCE[0]}:set OUTPUTFILE" 
+        # No need to shift here since the value is part of the same string
+        OUTPUTFILE="${key#*=}"
+        [[ $DEBUG == 'y' ]] && echo "--$LINENO ${BASH_SOURCE[0]}:set OUTPUTFILE" 
       ;;
       *)
-      # Do whatever you want with extra options
-      echo "Unknown option '$key'"
-      [[ $DEBUG == 'y' ]] && echo "--$LINENO ${BASH_SOURCE[0]}:hit unknown option" 
+        # Do whatever you want with extra options
+        echo "Unknown option '$key'"
+        [[ $DEBUG == 'y' ]] && echo "--$LINENO ${BASH_SOURCE[0]}:hit unknown option" 
       ;;
     esac
     # Shift after checking all the cases to get the next option
@@ -708,117 +720,137 @@ function main() {
 	# TODO: place your own options into the debug string
   # ----------------------------------------------------------------------------
 	[[ $DEBUG == 'y' ]] && echo "--$LINENO ${BASH_SOURCE[0]}:main()" 
-
-
   # ----------------------------------------------------------------------------
-  # Task I
-  #   make sure you apply script to direcory qoolixiloopAgithub
-  # ----------------------------------------------------------------------------
-  load_file_vars
-	if [[ $? == 1 ]]; then exit 1; fi
-  ask_user 'Task II.1' "./tmp"
-  
-  # ----------------------------------------------------------------------------
-  # Task II:
-  #  apply sed to all Home.md files  
-  # ----------------------------------------------------------------------------
-  
-  # 1. list of all Home.md files to which you will apply your script
-  local filelist_home_md="./*-loop.wiki/Home.md"
-  check_filelist "$filelist_home_md"
-	if [[ $? == 1 ]]; then exit 1; fi
-  
-  # user interaction
-  ask_user 'Task II.2' "./tmp"
-
-  # 2.1 give in the two variables TODO:
-  searchpattern='Links to all other repositories'
-  replacement='General topics'
-  
-  # 2.2 apply sed to $flelist_home_md
-  local dirbak_Home_md=./bak_Home_md/
-  sed_files_md "$searchpattern" "$replacement" \
-    "$filelist_home_md" "$dirbak_Home_md"
-	if [[ $? == 1 ]]; then exit 1; fi
-  
-  # user interaction 
-  ask_user 'Task III.1' "./tmp"
 
 
-  # ----------------------------------------------------------------------------
-  # Task III:
-  #   apply sed to all README.md files 
-  # ----------------------------------------------------------------------------
-  
-  # 1. list of all README.md files to which you will apply your script
-  local filelist_README_md="./*-loop/README.md"
-  check_filelist "$filelist_README_md"
-	if [[ $? == 1 ]]; then exit 1; fi
-  
-  # user interaction
-  ask_user 'Task III.2' "./tmp"
+  case "$START_AT_TASK" in
+    # ----------------------------------------------------------------------------
+    # Task I
+    #   make sure you apply script to direcory qoolixiloopAgithub
+    # ----------------------------------------------------------------------------
+    task_1|Task_1|task1|Task1|t1|T1|1)
+      load_file_vars
+	    if [[ $? == 1 ]]; then exit 1; fi
 
-  # 2.1 give in the two variables TODO:
-  searchpattern=''
-  replacement=''
-  
-  # 2.2 apply sed to filelist_README_md 
-  local dirbak_README_md=./bak_README_md/
-  sed_files_md "$searchpattern" "$replacement" \
-    "$filelist_README_md" "$dirbak_README_md"
-	if [[ $? == 1 ]]; then exit 1; fi
-  
-  # user interaction
-  ask_user 'Task IV.1' "./tmp"
+      # user interaction
+      ask_user 'Task II.1' "./tmp"
 
-
-  # ----------------------------------------------------------------------------
-  # Task IV: 
-  # ----------------------------------------------------------------------------
+      # and leave (;;) or  move on (;&)
+      ;&
+    # ----------------------------------------------------------------------------
+    # Task II:
+    #  apply sed to all Home.md files  
+    # ----------------------------------------------------------------------------
+    task_2) 
+      # 1. list of all Home.md files to which you will apply your script
+      local filelist_home_md="./*-loop.wiki/Home.md"
+      check_filelist "$filelist_home_md"
+  	  if [[ $? == 1 ]]; then exit 1; fi
+      
+      # user interaction
+      ask_user 'Task II.2' "./tmp"
   
-  # 1. list of all directories to which you will apply your script
-  local directorylist="./*-loop/"
-  check_dirlist "$directorylist"
-	if [[ $? == 1 ]]; then exit 1; fi
+      # 2.1 give in the two variables TODO:
+      searchpattern='Links to all other repositories'
+      replacement='General topics'
+      
+      # 2.2 apply sed to $flelist_home_md
+      #     for each file change the diff will be printed
+      #     after every diff there is a user interaction
+      local dirbak_Home_md=./bak_Home_md/
+      sed_files_md "$searchpattern" "$replacement" \
+        "$filelist_home_md" "$dirbak_Home_md"
+  	  if [[ $? == 1 ]]; then exit 1; fi
+      
+      # user interaction 
+      ask_user 'Task III.1' "./tmp"
+        
+      # and leave (;;) or  move on (;&)
+      ;;
+    # ----------------------------------------------------------------------------
+    # Task III:
+    #   apply sed to all README.md files 
+    # ----------------------------------------------------------------------------
+    task3)
+      # 1. list of all README.md files to which you will apply your script
+      local filelist_README_md="./*-loop/README.md"
+      check_filelist "$filelist_README_md"
+  	  if [[ $? == 1 ]]; then exit 1; fi
+      
+      # user interaction
+      ask_user 'Task III.2' "./tmp"
   
-  # user interaction
-  ask_user 'Task IV.2 git status' "./tmp"
+      # 2.1 give in the two variables TODO:
+      searchpattern=''
+      replacement=''
+      
+      # 2.2 apply sed to filelist_README_md 
+      #     for each file change the diff will be printed
+      #     after every diff there is a user interaction
+      local dirbak_README_md=./bak_README_md/
+      sed_files_md "$searchpattern" "$replacement" \
+        "$filelist_README_md" "$dirbak_README_md"
+    	if [[ $? == 1 ]]; then exit 1; fi
+      
+      # user interaction
+      ask_user 'Task IV.1' "./tmp"
 
-  # 2. check status
-  git_status_dirlist "$directorylist"
-	if [[ $? == 1 ]]; then exit 1; fi
+      # and leave (;;) or  move on (;&)
+      ;;
+    # ----------------------------------------------------------------------------
+    # Task IV: 
+    # ----------------------------------------------------------------------------
+    task_4) 
+      # 1. list of all directories to which you will apply your script
+      local directorylist="./*-loop/"
+      check_dirlist "$directorylist"
+  	  if [[ $? == 1 ]]; then exit 1; fi
+      
+      # user interaction
+      ask_user 'Task IV.2 git status' "./tmp"
   
-  # user interaction
-  ask_user 'Task IV.3 git add' "./tmp"
-
-  # 3. add
-  git_add_dirlist "$directorylist"
-	if [[ $? == 1 ]]; then exit 1; fi
+      # 2. check status
+      git_status_dirlist "$directorylist"
+  	  if [[ $? == 1 ]]; then exit 1; fi
+      
+      # user interaction
+      ask_user 'Task IV.3 git add' "./tmp"
   
-  # user interaction
-  ask_user 'Task IV.4 git status' "./tmp"
-
-  # 4. check status
-  git_status_dirlist "$directorylist"
-	if [[ $? == 1 ]]; then exit 1; fi
+      # 3. add
+      git_add_dirlist "$directorylist"
+  	  if [[ $? == 1 ]]; then exit 1; fi
+      
+      # user interaction
+      ask_user 'Task IV.4 git status' "./tmp"
   
-  # user interaction
-  ask_user 'Task IV.5 git commit' "./tmp"
-
-  #5. commit
-  timestamp=date
-  git_commit_dirlist "$directorylist" "batch run at $timestamp"
-  if [[ $? == 1 ]]; then exit 1; fi
+      # 4. check status
+      git_status_dirlist "$directorylist"
+  	  if [[ $? == 1 ]]; then exit 1; fi
+      
+      # user interaction
+      ask_user 'Task IV.5 git commit' "./tmp"
   
-  # user interaction
-  ask_user "$directorylist" "./tmp"
+      #5. commit
+      timestamp=date
+      git_commit_dirlist "$directorylist" "batch run at $timestamp"
+      if [[ $? == 1 ]]; then exit 1; fi
+      
+      # user interaction
+      ask_user "$directorylist" "./tmp"
+  
+      #6. push
+      git push_dirlist "$directorylist"
+      if [[ $? == 1 ]]; then exit 1; fi
+  
+      # Return with code 0
+      return 0
 
-  #6. push
-  git push_dirlist "$directorylist"
-  if [[ $? == 1 ]]; then exit 1; fi
-
-  # Return with code 0
-  return 0
+      # and leave (;;) or  move on (;&)
+      ;;
+    *)
+      echo "enter: -t task_1, -t task_2, -t task_3 or -t task_4"
+      ;;
+  esac
 }
 # -----------------------------------------------------------------------------
 
