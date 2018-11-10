@@ -192,12 +192,15 @@ load_file_vars() {
 
 read_continue_skip_return() {
   # ask whether to return from the script (exit will kill the terminal)
+  echo "$1" 
   echo "continue (c), skip(s), return (r)?"
-  read -r answer
-  case "$answer" in
-    c) echo "continue"
+  read -r ANSWER
+  case "$ANSWER" in
+    c) echo "continue" > "$2"
       ;;
-    r) echo "return"
+    s) echo "skip" > "$2"
+      ;;
+    r) echo "return" > "$2"
       return 1
       ;;
     *) echo "type c: continue, s: skip, r: return" 
@@ -280,7 +283,7 @@ sed_files_md() {
       # check replacements with diff
       diff "$file" "$dirbak/$newfilename"
       if [[ $? == 1 ]]; then return 1; fi
-      read_continue_skip_return
+      read_continue_skip_return 'next sed' "./tmp"
     # else if $file is not a file or not readable
     else
       echo "Error: cannot read $file"
@@ -303,7 +306,7 @@ git_status_dirlist() {
     [ -e "$directory" ] || continue
     # show status
     /usr/bin/git status
-    read_continue_skip_return
+    read_continue_skip_return 'next git status' "./tmp"
   done
 }
 
@@ -318,7 +321,7 @@ git_add_dirlist() {
     # otherwise continue with next directory in $dirlist
     [ -e "$directory" ] || continue
     /usr/bin/git add .
-    read_continue_skip_return
+    read_continue_skip_return 'next git add' "./tmp"
   done
 }
 
@@ -334,7 +337,7 @@ git_commit_dirlist(){
     # otherwise continue with next directory in $dirlist
     [ -e "$directory" ] || continue
     /usr/bin/git commit -m "$2"
-    read_continue_skip_return
+    read_continue_skip_return 'next git commit' "./tmp"
   done
 }
 # -----------------------------------------------------------------------------
@@ -366,7 +369,7 @@ function main() {
   # ----------------------------------------------------------------------------
   load_file_vars
 	if [[ $? == 1 ]]; then exit 1; fi
-  read_continue_skip_return
+  read_continue_skip_return 'Task II.1' "./tmp"
   
   # ----------------------------------------------------------------------------
   # Task II: 
@@ -375,17 +378,17 @@ function main() {
   local filelist_home_md="./*-loop.wiki/Home.md"
   check_filelist filelist_home_md
 	if [[ $? == 1 ]]; then exit 1; fi
-  read_continue_skip_return
+  read_continue_skip_return 'Task II.2' "./tmp"
 
   # TODO: 2.1 give in the two variables
-  searchpattern=''
-  replacement=''
+  searchpattern='Links to all other repositories'
+  replacement='General topics'
   # 2.2 apply sed to $flelist_home_md
   local dirbak_Home_md=./bak_Home_md/
   sed_files_md "$searchpattern" "$replacement" \
     "$filelist_home_md" "$dirbak_Home_md"
 	if [[ $? == 1 ]]; then exit 1; fi
-  read_continue_skip_return
+  read_continue_skip_return 'Task III.1' "./tmp"
 
 
   # ----------------------------------------------------------------------------
@@ -395,7 +398,7 @@ function main() {
   local filelist_README_md="./*-loop/README.md"
   gen_filelist filelist_README_md
 	if [[ $? == 1 ]]; then exit 1; fi
-  read_continue_skip_return
+  read_continue_skip_return 'Task III.2' "./tmp"
 
   # TODO: 2.1 give in the two variables
   searchpattern=''
@@ -405,7 +408,7 @@ function main() {
   sed_files_md "$searchpattern" "$replacement" \
     "$filelist_README_md" "$dirbak_README_md"
 	if [[ $? == 1 ]]; then exit 1; fi
-  read_continue_skip_return
+  read_continue_skip_return 'Task IV.1' "./tmp"
 
 
   # ----------------------------------------------------------------------------
@@ -415,28 +418,28 @@ function main() {
   local directorylist="./*-loop/"
   check_dirlist "$directorylist"
 	if [[ $? == 1 ]]; then exit 1; fi
-  read_continue_skip_return
+  read_continue_skip_return 'Task IV.2' "./tmp"
 
   # 2. check status
   git_status_dirlist "$directorylist"
 	if [[ $? == 1 ]]; then exit 1; fi
-  read_continue_skip_return
+  read_continue_skip_return 'Task IV.3' "./tmp"
 
   # 3. add
   git_add_dirlist "$directorylist"
 	if [[ $? == 1 ]]; then exit 1; fi
-  read_continue_skip_return
+  read_continue_skip_return 'Task IV.4' "./tmp"
 
   # 4. check status
   git_status_dirlist "$directorylist"
 	if [[ $? == 1 ]]; then exit 1; fi
-  read_continue_skip_return
+  read_continue_skip_return 'Task IV.5' "./tmp"
 
   #5. commit
   timestamp=date
   git_commit_dirlist "$directorylist" "batch run at $timestamp"
   if [[ $? == 1 ]]; then exit 1; fi
-  read_continue_skip_return
+  read_continue_skip_return "./tmp"
 
   # Return with code 0
   return 0
