@@ -251,7 +251,7 @@ check_dirlist() {
 sed_files_md() {
   # task: make changes on al Home.md files 
   # ----------------------------------------------------------------------------
-  # sed "s/searchpattern/replacement/g" $filelist_home_md
+  # sed "s/searchpattern/replacement/g" $filelist
   # sed "s/$1/$2/g $3
   # ----------------------------------------------------------------------------
   # input arguments
@@ -263,17 +263,24 @@ sed_files_md() {
   # temporary file
   local filetmp="/tmp/out.tmp.$$"
   # make a backup directory, if it alreay exists move on
-  [ ! -d $dirbak ] && mkdir -p $dirbak || :
+  if [ ! -d "$dirbak" ]; then mkdir -p "$dirbak" || :; fi
   # loop through the $filelist
-  for file in filelist; do
-    # if $file is a file (-f) and (-a) readable (-r)
-    if [ -f $file -a -r $file ]; then
+  for file in $filelist; do
+    # if $file is a file (-f) and (&&) readable (-r)
+    if [ -f "$file" ] && [ -r "$file" ]; then
       # make a backup copy of $file into $dirbak before applying sed
-      /bin/cp -f $file $dirbak
+      # $file is a relative path with filename. Cut away the / and . 
+      local tmp="${file%/*}_${file##*/}"
+      local newfilename=${tmp##*/}
+      /bin/cp -f "$file" "$dirbak/$newfilename"
       # apply sed substitution to $file to whole line (g)
       # avoid inline editing by writing into $filetmp
       sed "s/$searchpattern/$replacment/g" "$file" > $filetmp \
         && mv $filetmp "$file"
+      # check replacements with diff
+      diff "$file" "$dirbak/$newfilename"
+      if [[ $? == 1 ]]; then return 1; fi
+      read_continue_skip_return
     # else if $file is not a file or not readable
     else
       echo "Error: cannot read $file"
@@ -281,28 +288,54 @@ sed_files_md() {
   done
   # delete temporary file
   /bin/rm $filetmp
+  return 0
 }
 
-git_status__dirlist() {
-# task: apply git status to all your directories
-# ----------------------------------------------------------------------------
-# git status
-# ----------------------------------------------------------------------------
+git_status_dirlist() {
+  # task: apply git status to all your directories
+  # ----------------------------------------------------------------------------
+  # git status
+  # ----------------------------------------------------------------------------
+  local dirlist="$1"
+  for directory in $dirlist; do
+    # if $directory exists (-e) go on
+    # otherwise continue with next directory in $dirlist
+    [ -e "$directory" ] || continue
+    # show status
+    /usr/bin/git status
+    read_continue_skip_return
+  done
 }
 
-git_add__dirlist() {
-# task: apply git add to all your directories
-# ----------------------------------------------------------------------------
-# git add .
-# ----------------------------------------------------------------------------
+git_add_dirlist() {
+  # task: apply git add to all your directories
+  # ----------------------------------------------------------------------------
+  # git add .
+  # ----------------------------------------------------------------------------
+  local dirlist="$1"
+  for directory in $dirlist; do
+    # if $directory exists (-e) go on
+    # otherwise continue with next directory in $dirlist
+    [ -e "$directory" ] || continue
+    /usr/bin/git add .
+    read_continue_skip_return
+  done
 }
 
 git_commit_dirlist(){
-# task: apply git commit to all your directories
-# ----------------------------------------------------------------------------
-# timestamp date
-# git commit -m "batch run at $timestamp"
-# ----------------------------------------------------------------------------
+  # task: apply git commit to all your directories
+  # ----------------------------------------------------------------------------
+  # timestamp date
+  # git commit -m "batch run at $timestamp"
+  # ----------------------------------------------------------------------------
+  local dirlist="$1"
+  for directory in $dirlist; do
+    # if $directory exists (-e) go on
+    # otherwise continue with next directory in $dirlist
+    [ -e "$directory" ] || continue
+    /usr/bin/git commit -m "$2"
+    read_continue_skip_return
+  done
 }
 # -----------------------------------------------------------------------------
 
@@ -349,14 +382,9 @@ function main() {
   replacement=''
   # 2.2 apply sed to $flelist_home_md
   local dirbak_Home_md=./bak_Home_md/
-  sed_files_md $searchpattern $replacement \
-    $filelist_home_md $dirbak_Home_md
+  sed_files_md "$searchpattern" "$replacement" \
+    "$filelist_home_md" "$dirbak_Home_md"
 	if [[ $? == 1 ]]; then exit 1; fi
-  read_continue_skip_return
-
-  # 3. check with replacements with diff 
-	
-  if [[ $? == 1 ]]; then exit 1; fi
   read_continue_skip_return
 
 
@@ -374,40 +402,41 @@ function main() {
   replacement=''
   # 2.2 apply sed to filelist_README_md 
   local dirbak_README_md=./bak_README_md/
-  sed_files_md $searchpattern $replacement \
-    $filelist_README_md $dirbak_README_md
+  sed_files_md "$searchpattern" "$replacement" \
+    "$filelist_README_md" "$dirbak_README_md"
 	if [[ $? == 1 ]]; then exit 1; fi
-  read_continue_skip_return
-
-  # 3. check replacements with diff
-	
-  if [[ $? == 1 ]]; then exit 1; fi
   read_continue_skip_return
 
 
   # ----------------------------------------------------------------------------
   # Task IV: 
-  # 1. list of all directories to which you will apply your script
   # ----------------------------------------------------------------------------
+  # 1. list of all directories to which you will apply your script
   local directorylist="./*-loop/"
-  gen_dirlist__qoolixiloop
+  check_dirlist "$directorylist"
 	if [[ $? == 1 ]]; then exit 1; fi
   read_continue_skip_return
 
-
-
-
-
+  # 2. check status
+  git_status_dirlist "$directorylist"
 	if [[ $? == 1 ]]; then exit 1; fi
   read_continue_skip_return
 
-
-
-
-
+  # 3. add
+  git_add_dirlist "$directorylist"
 	if [[ $? == 1 ]]; then exit 1; fi
   read_continue_skip_return
 
+  # 4. check status
+  git_status_dirlist "$directorylist"
+	if [[ $? == 1 ]]; then exit 1; fi
+  read_continue_skip_return
+
+  #5. commit
+  timestamp=date
+  git_commit_dirlist "$directorylist" "batch run at $timestamp"
+  if [[ $? == 1 ]]; then exit 1; fi
+  read_continue_skip_return
 
   # Return with code 0
   return 0
