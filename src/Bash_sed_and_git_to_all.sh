@@ -15,6 +15,12 @@
 # Other options:
 #   Version info: -v or --version
 #   Doc info:     -d or --doc
+# Useful navigation keystokes in vim's normal mode
+#   gd, gD:       jump to local, global function definition (word under cursor)
+#   gf:           jump to file under cursor
+#   Ctrl-o,-u,'': jump navigation history backwards, forwards, toogle
+#   g*, g#:       search for next word under cursor
+#   n, Shift-n    go to next search word forwards, backwards
 #==============================================================================
 
 
@@ -296,6 +302,7 @@ script_sourced_or_executed() {
 #             git_status_dirlist(): apply git status to directory list
 #             git_add_dirlist():    apply git add . to directory list
 #             git_commit_dirlist()  apply git commit to directory list
+#             git_push_dirlist():   apply git push to directory list
 #             main():               main function
 # -----------------------------------------------------------------------------
 [[ $DEBUG == 'y' ]] && echo "--$LINENO ${BASH_SOURCE[0]}:function definitions" 
@@ -619,6 +626,44 @@ git_commit_dirlist(){
 # -----------------------------------------------------------------------------
 
 
+git_push_dirlist(){
+  
+  #============================================================================
+  # ---------------------------------------------------------------------------
+  # For Task IV
+  # Purpose:
+  #   apply git push to all your directories
+  #   it uses the shell function 
+  #     $ git push
+  # Arguments:
+  #   $1:   list of all directories to apply the job
+  # ---------------------------------------------------------------------------
+  [[ $DEBUG == 'y' ]] && echo "--$LINENO ${BASH_SOURCE[0]}:load_file_vars()" 
+  # ---------------------------------------------------------------------------
+  #============================================================================
+  
+  # input arguments
+  local dirlist="$1"
+  
+  # loop through directory list
+  for directory in $dirlist; do
+    
+    # if $directory exists (-e) go on
+    # otherwise continue with next directory in $dirlist
+    [ -e "$directory" ] || continue
+    
+    # execute task
+    /usr/bin/git push
+
+    # user interaction
+    ask_user 'next git push' "./tmp"
+  done
+  return 0
+
+}
+# -----------------------------------------------------------------------------
+
+
 
 function main() {
 
@@ -634,97 +679,143 @@ function main() {
   # ---------------------------------------------------------------------------
   #============================================================================
 	
-  # Print doc or version strings if script is executed
-	# with ---doc or with --version options and exit script.
-	# $@ passes the command line arguments to the function
-	# $? catches the return status of last command.
+  # ----------------------------------------------------------------------------
+  # Framework related tasks
+  # Purpose:
+  #   get_options:  parses the command line sting 
+  #                 reads passed option arguments and takes defined action:
+  #                   - prints doc or version strings if script is executed
+	#                     with ---doc or with --version options and exits script.
+  #                   - prints debug info if script is run with --debug option
+	#                 $@: passes the command line arguments to the function
+	#                 $?: catches the return status of last command.
+  #
 	# TODO: place your own options into the debug string
+  # ----------------------------------------------------------------------------
 	get_options "$@";
 	if [[ $? == 1 ]]; then exit 1; fi
 	[[ $DEBUG == 'y' ]] && echo "--$LINENO ${BASH_SOURCE[0]}: \
         $?", "$*", "$OUTPUTFILE", $DEBUG
 
-	# TODO: The script's execution part goes here
+  # ----------------------------------------------------------------------------
+  # User related tasks
+  # Purpose
+  #  Task I:    load file system variables
+  #  Task II:   apply sed to all Home.md files
+	#  Task III:  apply sed to all README.md files
+	#  Task IV:   apply git add . and git commit to all repos
+  #
+	# TODO: place your own options into the debug string
+  # ----------------------------------------------------------------------------
 	[[ $DEBUG == 'y' ]] && echo "--$LINENO ${BASH_SOURCE[0]}:main()" 
 
 
   # ----------------------------------------------------------------------------
   # Task I
-  # 1. make sure you apply script to direcory qoolixiloopAgithub
+  #   make sure you apply script to direcory qoolixiloopAgithub
   # ----------------------------------------------------------------------------
   load_file_vars
 	if [[ $? == 1 ]]; then exit 1; fi
   ask_user 'Task II.1' "./tmp"
   
   # ----------------------------------------------------------------------------
-  # Task II: 
+  # Task II:
+  #  apply sed to all Home.md files  
   # ----------------------------------------------------------------------------
+  
   # 1. list of all Home.md files to which you will apply your script
   local filelist_home_md="./*-loop.wiki/Home.md"
   check_filelist "$filelist_home_md"
 	if [[ $? == 1 ]]; then exit 1; fi
+  
+  # user interaction
   ask_user 'Task II.2' "./tmp"
 
-  # TODO: 2.1 give in the two variables
+  # 2.1 give in the two variables TODO:
   searchpattern='Links to all other repositories'
   replacement='General topics'
+  
   # 2.2 apply sed to $flelist_home_md
   local dirbak_Home_md=./bak_Home_md/
   sed_files_md "$searchpattern" "$replacement" \
     "$filelist_home_md" "$dirbak_Home_md"
 	if [[ $? == 1 ]]; then exit 1; fi
+  
+  # user interaction 
   ask_user 'Task III.1' "./tmp"
 
 
   # ----------------------------------------------------------------------------
-  # Task III: 
+  # Task III:
+  #   apply sed to all README.md files 
   # ----------------------------------------------------------------------------
+  
   # 1. list of all README.md files to which you will apply your script
   local filelist_README_md="./*-loop/README.md"
   check_filelist "$filelist_README_md"
 	if [[ $? == 1 ]]; then exit 1; fi
+  
+  # user interaction
   ask_user 'Task III.2' "./tmp"
 
-  # TODO: 2.1 give in the two variables
+  # 2.1 give in the two variables TODO:
   searchpattern=''
   replacement=''
+  
   # 2.2 apply sed to filelist_README_md 
   local dirbak_README_md=./bak_README_md/
   sed_files_md "$searchpattern" "$replacement" \
     "$filelist_README_md" "$dirbak_README_md"
 	if [[ $? == 1 ]]; then exit 1; fi
+  
+  # user interaction
   ask_user 'Task IV.1' "./tmp"
 
 
   # ----------------------------------------------------------------------------
   # Task IV: 
   # ----------------------------------------------------------------------------
+  
   # 1. list of all directories to which you will apply your script
   local directorylist="./*-loop/"
   check_dirlist "$directorylist"
 	if [[ $? == 1 ]]; then exit 1; fi
-  ask_user 'Task IV.2' "./tmp"
+  
+  # user interaction
+  ask_user 'Task IV.2 git status' "./tmp"
 
   # 2. check status
   git_status_dirlist "$directorylist"
 	if [[ $? == 1 ]]; then exit 1; fi
-  ask_user 'Task IV.3' "./tmp"
+  
+  # user interaction
+  ask_user 'Task IV.3 git add' "./tmp"
 
   # 3. add
   git_add_dirlist "$directorylist"
 	if [[ $? == 1 ]]; then exit 1; fi
-  ask_user 'Task IV.4' "./tmp"
+  
+  # user interaction
+  ask_user 'Task IV.4 git status' "./tmp"
 
   # 4. check status
   git_status_dirlist "$directorylist"
 	if [[ $? == 1 ]]; then exit 1; fi
-  ask_user 'Task IV.5' "./tmp"
+  
+  # user interaction
+  ask_user 'Task IV.5 git commit' "./tmp"
 
   #5. commit
   timestamp=date
   git_commit_dirlist "$directorylist" "batch run at $timestamp"
   if [[ $? == 1 ]]; then exit 1; fi
-  ask_user "./tmp"
+  
+  # user interaction
+  ask_user "$directorylist" "./tmp"
+
+  #6. push
+  git push_dirlist "$directorylist"
+  if [[ $? == 1 ]]; then exit 1; fi
 
   # Return with code 0
   return 0
