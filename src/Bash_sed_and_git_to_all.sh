@@ -22,10 +22,11 @@
 #==============================================================================
 # -----------------------------------------------------------------------------
 # TODO: here is the place where you put you framework related functions
-#         1.) version():        to print version info 
-#         2.) doc():            to print documentation info
-#         3.) get_options():    to parse your script options
-#         4.) 
+#         1.) version():          to print version info 
+#         2.) doc():              to print documentation info
+#         3.) get_options():      to parse your script options
+#         4.) ask_user():         to navigate
+#         5.) script_sourced_executed(): debug info
 # -----------------------------------------------------------------------------
 #==============================================================================
 
@@ -96,12 +97,12 @@ get_options() { # this function is called from main()
   #   it reads your command line string, parses the options
   #   and acts as defined in the code below.
   # options parsed:
-  #   the code below recoginizes
-  #    -v and --version :       to print version info (ex. for function call)
-  #    -d and --doc:            to print doc info (ex. for function call)
-  #   --verbose and --debug:    to print debug info (ex. for function call)
-  #   -o and --output-file      to set the outputfile (ex. for global variable)
-  #   -o= and --output-file=    to set the outputfile (ex. for global variable)
+  #   the code below recoginizes:
+  #     -v and --version :        to print version info (ex. for function call)
+  #     -d and --doc:             to print doc info (ex. for function call)
+  #     --verbose and --debug:    to print debug info (ex. for function call)
+  #     -o and --output-file      to set the outputfile (ex. for global variable)
+  #     -o= and --output-file=    to set the outputfile (ex. for global variable)
   #
   # TODO: adapt the function for your own script options
   # ---------------------------------------------------------------------------
@@ -109,11 +110,15 @@ get_options() { # this function is called from main()
   # ---------------------------------------------------------------------------
   #============================================================================
 
+  # unset the varibles (in case they are loaded from somewhere)
   unset OUTPUTFILE
   unset DEBUG
+
   # As long as there is at least one more argument, keep looping
   while [[ $# -gt 0 ]]; do
     [[ $DEBUG == 'y' ]] && echo "--$LINENO ${BASH_SOURCE[0]}:start loop" 
+    
+    # check the command line arguments string $@
     key="$1"
     case "$key" in
       # This is a flag type option. Will catch either -f or --foo
@@ -216,6 +221,7 @@ ask_user() {
 }
 # -----------------------------------------------------------------------------
 
+
 script_sourced_or_executed() {
   
   #============================================================================
@@ -283,6 +289,14 @@ script_sourced_or_executed() {
 #         1.) shell variables (have global scope in script and functions)
 #             (define all other variables within functions with scope "local")
 #         2.) function definitions (API)
+#             load_file_vars():     generate filesystem related global vars
+#             check_filelist():     check the file list
+#             check_dirlist():      check the directory list
+#             sed_files_md():       make substituion
+#             git_status_dirlist(): apply git status to directory list
+#             git_add_dirlist():    apply git add . to directory list
+#             git_commit_dirlist()  apply git commit to directory list
+#             main():               main function
 # -----------------------------------------------------------------------------
 [[ $DEBUG == 'y' ]] && echo "--$LINENO ${BASH_SOURCE[0]}:function definitions" 
 # ----------------------------------------------------------------------------
@@ -532,21 +546,36 @@ git_add_dirlist() {
   
   #============================================================================
   # ---------------------------------------------------------------------------
-  # task: apply git add to all your directories
-  # git add .
+  # For Task IV
+  # Purpose:
+  #   apply git add . to all your directories
+  #   it uses the shell function 
+  #     $ git add .
+  # Arguments:
+  #   $1:   list of all directories to apply the job
   # ---------------------------------------------------------------------------
   [[ $DEBUG == 'y' ]] && echo "--$LINENO ${BASH_SOURCE[0]}:load_file_vars()" 
   # ---------------------------------------------------------------------------
   #============================================================================
-  
+ 
+  # input arguments
   local dirlist="$1"
+  
+  #loop through list of directories
   for directory in $dirlist; do
+    
     # if $directory exists (-e) go on
     # otherwise continue with next directory in $dirlist
     [ -e "$directory" ] || continue
+    
+    # 
     /usr/bin/git add .
+
+    # user interaction
     ask_user 'next git add' "./tmp"
   done
+  retrn 0
+
 }
 # -----------------------------------------------------------------------------
 
@@ -555,22 +584,37 @@ git_commit_dirlist(){
   
   #============================================================================
   # ---------------------------------------------------------------------------
-  # task: apply git commit to all your directories
-  # timestamp date
-  # git commit -m "batch run at $timestamp"
+  # For Task IV
+  # Purpose:
+  #   apply git commit to all your directories
+  #   it uses the shell function 
+  #     $ timestamp date
+  #     $ git commit -m "batch run at $timestamp"
+  # Arguments:
+  #   $1:   list of all directories to apply the job
   # ---------------------------------------------------------------------------
   [[ $DEBUG == 'y' ]] && echo "--$LINENO ${BASH_SOURCE[0]}:load_file_vars()" 
   # ---------------------------------------------------------------------------
   #============================================================================
   
+  # input arguments
   local dirlist="$1"
+  
+  # loop through directory list
   for directory in $dirlist; do
+    
     # if $directory exists (-e) go on
     # otherwise continue with next directory in $dirlist
     [ -e "$directory" ] || continue
+    
+    # execute task
     /usr/bin/git commit -m "$2"
+
+    # user interaction
     ask_user 'next git commit' "./tmp"
   done
+  return 0
+
 }
 # -----------------------------------------------------------------------------
 
@@ -580,7 +624,13 @@ function main() {
 
   #============================================================================
   # ---------------------------------------------------------------------------
-  # TODO: your main()
+  # Purpose:
+  #   Here is the place where you call your functions.
+  #   Every instrustruction, command or function is started here.
+  #   (No code outside this function should be running automatically)
+  #
+  # TODO: create your own tasks, 
+  #       try to outsource repetitive tasks into 
   # ---------------------------------------------------------------------------
   #============================================================================
 	
