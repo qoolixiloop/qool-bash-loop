@@ -1,13 +1,14 @@
 #!/bin/bash
 
 
-
 #==============================================================================
+#doc_begin---------------------------------------------------------------------
 # Bash Script: SED on md all files, git add, commit and push on all repos
-# Framework: own template, shellcheck
+# Framework: own template
+# Syntax check: shellcheck
 # Roland Benz
 # 9.Nov.2018
-# -----------------------------------------------------------------------------
+#doc_end-----------------------------------------------------------------------
 # Task to run: choose option -t or --task with value task_1 { _2, _3, _4}
 # Debug info:
 #   For full debug mode start your script with the following command. 
@@ -23,8 +24,8 @@
 #   Ctrl-o,-u,'': jump navigation history backwards, forwards, toogle
 #   g*, g#:       search for next word under cursor
 #   n, Shift-n    go to next search word forwards, backwards
+# -----------------------------------------------------------------------------
 #==============================================================================
-
 
 
 #==============================================================================
@@ -41,14 +42,14 @@
 version() { # this function is called from get_options()
   
   #============================================================================
-  # ---------------------------------------------------------------------------
-  # Version information
+  #doc_begin-------------------------------------------------------------------
+  # version(): prints version information
   # purpose: 
   #   -v or --version: running script with these options will print the info
   #
   # TODO: write version info into the heredoc, that is the part 
   #       between the EOF markers. Do not indent the last EOF!
-  # ---------------------------------------------------------------------------
+  #doc_end---------------------------------------------------------------------
   [[ $DEBUG == 'y' ]] && echo "--$LINENO ${BASH_SOURCE[0]}:version()" 
   # ---------------------------------------------------------------------------
   #============================================================================
@@ -70,26 +71,33 @@ ____EOF
 doc() { #this function is called from get_options()
 
   #============================================================================
-  # ---------------------------------------------------------------------------
-  # Script information
+  #doc_begin-------------------------------------------------------------------
+  # doc(): prints script information
   # purpose:
   #   -d or --doc: running script with these options will print the doc info
   # 
   # TODO: write about the overall purpose into the heredoc, that is the part
   #       between the EOF markers. Do not indent the last EOF!
-  # ---------------------------------------------------------------------------
+  #doc_end---------------------------------------------------------------------
   [[ $DEBUG == 'y' ]] && echo "--$LINENO ${BASH_SOURCE[0]}:doc()" 
   # ---------------------------------------------------------------------------
   #============================================================================
-	
+
   # Everything between the two EOF's will be printed 
-	cat << ____EOF
+  cat <<____EOF
     your script description goes here
-	    and here
-			  and here
+      and here
+       and here
 ____EOF
-    # return 1 to indicate that the script shall terminate
-    return 1
+
+  # print all comments between doc_begin and doc_end (exclusive)
+  #awk '/doc_begin/{flag=1;next}/doc_end/{flag=0}flag' "$0"
+
+  # print all comments between doc_begin and doc_end (inclusive)
+  awk '/doc_begin/,/doc_end/' "$0"
+
+  # return 1 to indicate that the script shall terminate
+  return 1
 
 }
 # -----------------------------------------------------------------------------
@@ -97,9 +105,9 @@ ____EOF
 
 get_options() { # this function is called from main()
 
-  #===== =======================================================================
-  # ---------------------------------------------------------------------------
-  # Command line option parser
+  #============================================================================
+  #doc_begin-------------------------------------------------------------------
+  # get_options(): Command line option parser
   # purpose:
   #   after starting this scipt this function will be called in main() 
   #   it reads your command line string, parses the options
@@ -115,7 +123,7 @@ get_options() { # this function is called from main()
   #
   # TODO: adapt the function for your own script options
   #       only make an extra shift when an option takes a value (--option value)
-  # ---------------------------------------------------------------------------
+  #doc_end---------------------------------------------------------------------
   [[ $DEBUG == 'y' ]] && echo "--$LINENO ${BASH_SOURCE[0]}:get_options" 
   # ---------------------------------------------------------------------------
   #============================================================================
@@ -195,8 +203,8 @@ get_options() { # this function is called from main()
 ask_user() {
 
   #============================================================================
-  # ---------------------------------------------------------------------------
-  # For User Interaction
+  #doc_begin-------------------------------------------------------------------
+  # ask_user(): For User Interaction
   # Purpose:
   #   Ask user wether he wants to:
   #     Continue: does nothing (go to next line)
@@ -205,7 +213,7 @@ ask_user() {
   # Arguments:
   #     $1:       name of the next code block (will be printed)
   #     $2:       path/filename of a temporary file (used to return decision)
-  # ---------------------------------------------------------------------------
+  #doc_end---------------------------------------------------------------------
   [[ $DEBUG == 'y' ]] && echo "--$LINENO ${BASH_SOURCE[0]}:ask_user()" 
   # ---------------------------------------------------------------------------
   #============================================================================
@@ -243,7 +251,8 @@ ask_user() {
 script_sourced_or_executed() {
   
   #============================================================================
-  # ---------------------------------------------------------------------------
+  #doc_begin-------------------------------------------------------------------
+  # scripts_sourced_or executed():
   # Purpose:
   #   Function to check whether the script is sourced or executed
   #		  1) if you started your script with the command below on the command line
@@ -262,10 +271,10 @@ script_sourced_or_executed() {
   #   LINENO:       line number (bash magic)
   #   BASH_SOURCE:  script name of sourced script (bash environment variable)
   #   0:            script name of executed script (command line argument)         
-  # ---------------------------------------------------------------------------
+  #doc_end---------------------------------------------------------------------
   [[ $DEBUG == 'y' ]] && echo "--$LINENO ${BASH_SOURCE[0]}:sourced or executed?" 
   # ---------------------------------------------------------------------------
-  #============================================================================
+  #============= ===============================================================
   
   # compare basename of execution and source name 
   if [[ $(basename "$0") == $(basename "${BASH_SOURCE[0]}") ]]; then
@@ -333,16 +342,16 @@ script_sourced_or_executed() {
 load_file_vars() {
   
   #============================================================================
-  # ---------------------------------------------------------------------------
-  # For Task I
+  #doc_begin-------------------------------------------------------------------
+  # load_file_vars(): For Task I
   # Purpose:
   #   prints filesystem information 
   #   check the info to make sure you apply the script to the direcory 
   #   => qoolixiloopAgithub/ (hardcoded below)
-  # ---------------------------------------------------------------------------  
+  #doc_end---------------------------------------------------------------------  
   [[ $DEBUG == 'y' ]] && echo "--$LINENO ${BASH_SOURCE[0]}:load_file_vars()" 
   # ---------------------------------------------------------------------------
-  #============================================================================
+  #=============================== =============================================
   
   # running script: extract filename and path information
   fullpath_with_scriptname=$(realpath "${BASH_SOURCE[0]}")
@@ -383,12 +392,12 @@ load_file_vars() {
 check_filelist(){
   
   #============================================================================
-  # ---------------------------------------------------------------------------
-  # For Task II and Task III: 
+  #doc_begin-------------------------------------------------------------------
+  # check_filelist(): For Task II and Task III: 
   # Purpose:
   #   makes a list of all files to which you will apply your script
   #   check the output before you move on
-  # ---------------------------------------------------------------------------
+  #doc_end---------------------------------------------------------------------
   [[ $DEBUG == 'y' ]] && echo "--$LINENO ${BASH_SOURCE[0]}:check_filelist()" 
   # ---------------------------------------------------------------------------
   #============================================================================
@@ -420,12 +429,12 @@ check_filelist(){
 check_dirlist() {
   
   #============================================================================
-  # ---------------------------------------------------------------------------
-  # For Task IV: 
+  #doc_begin-------------------------------------------------------------------
+  # check_dirlist(): For Task IV: 
   # Purpose: 
   #   makes a list of all directories to which you will apply your script
   #   check the output before you move on
-  # ---------------------------------------------------------------------------
+  #doc_end---------------------------------------------------------------------
   [[ $DEBUG == 'y' ]] && echo "--$LINENO ${BASH_SOURCE[0]}:check_dirlist()"
   # ---------------------------------------------------------------------------
   #============================================================================
@@ -456,8 +465,8 @@ check_dirlist() {
 sed_files_md() {
   
   #============================================================================
-  # ---------------------------------------------------------------------------
-  # For Task II and Task III
+  #doc_begin-------------------------------------------------------------------
+  # sed_files_md(): For Task II and Task III
   # Purpose:
   #   1.) make a backup of all files you pass to the function
   #   2.) make substitutions on all files you pass to the function
@@ -470,7 +479,7 @@ sed_files_md() {
   #   $2: sed replacement
   #   $3: sed file list with all the files to apply your substitutions
   #   $4: backup directory for all your files
-  # ---------------------------------------------------------------------------
+  #doc_end---------------------------------------------------------------------
   [[ $DEBUG == 'y' ]] && echo "--$LINENO ${BASH_SOURCE[0]}:sed_files_md()" 
   # ---------------------------------------------------------------------------
   #============================================================================
@@ -528,15 +537,15 @@ sed_files_md() {
 git_status_dirlist() {
   
   #============================================================================
-  # ---------------------------------------------------------------------------
-  # For Task IV
+  #doc_begin-------------------------------------------------------------------
+  # git_status_dirlist(): For Task IV
   # Purpose:
   #   apply git status to all your directories
   #   it uses the shell function 
   #     $ git status
   # Arguments:
   #   $1:   list of all directories to apply the job
-  # ---------------------------------------------------------------------------
+  #doc_end---------------------------------------------------------------------
   [[ $DEBUG == 'y' ]] && echo "--$LINENO ${BASH_SOURCE[0]}:load_file_vars()" 
   # ---------------------------------------------------------------------------
   #============================================================================
@@ -564,15 +573,15 @@ git_status_dirlist() {
 git_add_dirlist() {
   
   #============================================================================
-  # ---------------------------------------------------------------------------
-  # For Task IV
+  #doc_begin-------------------------------------------------------------------
+  # git_add_dirlist(): For Task IV
   # Purpose:
   #   apply git add . to all your directories
   #   it uses the shell function 
   #     $ git add .
   # Arguments:
   #   $1:   list of all directories to apply the job
-  # ---------------------------------------------------------------------------
+  #doc_end---------------------------------------------------------------------
   [[ $DEBUG == 'y' ]] && echo "--$LINENO ${BASH_SOURCE[0]}:load_file_vars()" 
   # ---------------------------------------------------------------------------
   #============================================================================
@@ -602,8 +611,8 @@ git_add_dirlist() {
 git_commit_dirlist(){
   
   #============================================================================
-  # ---------------------------------------------------------------------------
-  # For Task IV
+  #doc_begin-------------------------------------------------------------------
+  # git_commit_dirlist(): For Task IV
   # Purpose:
   #   apply git commit to all your directories
   #   it uses the shell function 
@@ -611,7 +620,7 @@ git_commit_dirlist(){
   #     $ git commit -m "batch run at $timestamp"
   # Arguments:
   #   $1:   list of all directories to apply the job
-  # ---------------------------------------------------------------------------
+  #doc_end---------------------------------------------------------------------
   [[ $DEBUG == 'y' ]] && echo "--$LINENO ${BASH_SOURCE[0]}:load_file_vars()" 
   # ---------------------------------------------------------------------------
   #============================================================================
@@ -641,15 +650,15 @@ git_commit_dirlist(){
 git_push_dirlist(){
   
   #============================================================================
-  # ---------------------------------------------------------------------------
-  # For Task IV
+  #doc_begin-------------------------------------------------------------------
+  # git_push_dirlist(): For Task IV
   # Purpose:
   #   apply git push to all your directories
   #   it uses the shell function 
   #     $ git push
   # Arguments:
   #   $1:   list of all directories to apply the job
-  # ---------------------------------------------------------------------------
+  #doc_end---------------------------------------------------------------------
   [[ $DEBUG == 'y' ]] && echo "--$LINENO ${BASH_SOURCE[0]}:load_file_vars()" 
   # ---------------------------------------------------------------------------
   #============================================================================
@@ -680,7 +689,8 @@ git_push_dirlist(){
 function main() {
 
   #============================================================================
-  # ---------------------------------------------------------------------------
+  #doc_begin_main--------------------------------------------------------------
+  # main()
   # Purpose:
   #   Here is the place where you call your functions.
   #   Every instrustruction, command or function is started here.
@@ -688,7 +698,7 @@ function main() {
   #
   # TODO: create your own tasks, 
   #       try to outsource repetitive tasks into 
-  # ---------------------------------------------------------------------------
+  #doc_end_main----------------------------------------------------------------
   #============================================================================
 	
   # ----------------------------------------------------------------------------
@@ -704,144 +714,157 @@ function main() {
   #
 	# TODO: place your own options into the debug string
   # ----------------------------------------------------------------------------
-	get_options "$@";
+	
+  get_options "$@";
 	if [[ $? == 1 ]]; then exit 1; fi
 	[[ $DEBUG == 'y' ]] && echo "--$LINENO ${BASH_SOURCE[0]}: \
         $?", "$*", "$OUTPUTFILE", $DEBUG
 
-  # ----------------------------------------------------------------------------
-  # User related tasks
+  #doc_begin_main---------------------------------------------------------------
+  # main(): user related tasks
   # Purpose
   #  Task I:    load file system variables
   #  Task II:   apply sed to all Home.md files
-	#  Task III:  apply sed to all README.md files
-	#  Task IV:   apply git add . and git commit to all repos
+  #  Task III:  apply sed to all README.md files
+  #  Task IV:   apply git add . and git commit, git push to all repos
   #
-	# TODO: place your own options into the debug string
-  # ----------------------------------------------------------------------------
-	[[ $DEBUG == 'y' ]] && echo "--$LINENO ${BASH_SOURCE[0]}:main()" 
+  # TODO: place your own options into the debug string
+  #doc_end_main-----------------------------------------------------------------
+  [[ $DEBUG == 'y' ]] && echo "--$LINENO ${BASH_SOURCE[0]}:main()" 
   # ----------------------------------------------------------------------------
 
 
   case "$START_AT_TASK" in
-    # ----------------------------------------------------------------------------
+    #doc_begin_main---------------------------------------------------------------
     # Task I
     #   make sure you apply script to direcory qoolixiloopAgithub
-    # ----------------------------------------------------------------------------
+    #doc_end_main-----------------------------------------------------------------
     task_1|Task_1|task1|Task1|t1|T1|1)
       load_file_vars
-	    if [[ $? == 1 ]]; then exit 1; fi
+      if [[ $? == 1 ]]; then echo "exit: $LINENO"; exit 1; fi
 
       # user interaction
       ask_user 'Task II.1' "./tmp"
+      if [[ $? == 1 ]]; then echo "exit: $LINENO"; exit 1; fi
 
-      # and leave (;;) or  move on (;&)
+      # and leave (;;) or  move on (;&) 
       ;&
-    # ----------------------------------------------------------------------------
+    #doc_begin_main---------------------------------------------------------------
     # Task II:
     #  apply sed to all Home.md files  
-    # ----------------------------------------------------------------------------
+    #doc_end_main-----------------------------------------------------------------
     task_2) 
       # 1. list of all Home.md files to which you will apply your script
       local filelist_home_md="./*-loop.wiki/Home.md"
       check_filelist "$filelist_home_md"
-  	  if [[ $? == 1 ]]; then exit 1; fi
-      
+      if [[ $? == 1 ]]; then echo "exit: $LINENO"; exit 1; fi
+
       # user interaction
       ask_user 'Task II.2' "./tmp"
-  
+      if [[ $? == 1 ]]; then echo "exit: $LINENO"; exit 1; fi
+
       # 2.1 give in the two variables TODO:
       searchpattern='Links to all other repositories'
       replacement='General topics'
-      
+
       # 2.2 apply sed to $flelist_home_md
       #     for each file change the diff will be printed
       #     after every diff there is a user interaction
       local dirbak_Home_md=./bak_Home_md/
       sed_files_md "$searchpattern" "$replacement" \
         "$filelist_home_md" "$dirbak_Home_md"
-  	  if [[ $? == 1 ]]; then exit 1; fi
-      
+      if [[ $? == 1 ]]; then echo "exit: $LINENO"; exit 1; fi
+
       # user interaction 
       ask_user 'Task III.1' "./tmp"
-        
+      if [[ $? == 1 ]]; then echo "exit: $LINENO"; exit 1; fi
+
       # and leave (;;) or  move on (;&)
       ;;
-    # ----------------------------------------------------------------------------
+    #doc_begin_main---------------------------------------------------------------
     # Task III:
     #   apply sed to all README.md files 
-    # ----------------------------------------------------------------------------
+    #doc_end_main-----------------------------------------------------------------
     task3)
       # 1. list of all README.md files to which you will apply your script
       local filelist_README_md="./*-loop/README.md"
       check_filelist "$filelist_README_md"
-  	  if [[ $? == 1 ]]; then exit 1; fi
-      
+      if [[ $? == 1 ]]; then echo "exit: $LINENO"; exit 1; fi
+
       # user interaction
       ask_user 'Task III.2' "./tmp"
-  
+      if [[ $? == 1 ]]; then echo "exit: $LINENO"; exit 1; fi
+
       # 2.1 give in the two variables TODO:
       searchpattern=''
       replacement=''
-      
+
       # 2.2 apply sed to filelist_README_md 
       #     for each file change the diff will be printed
       #     after every diff there is a user interaction
       local dirbak_README_md=./bak_README_md/
       sed_files_md "$searchpattern" "$replacement" \
         "$filelist_README_md" "$dirbak_README_md"
-    	if [[ $? == 1 ]]; then exit 1; fi
-      
+      if [[ $? == 1 ]]; then echo "exit: $LINENO"; exit 1; fi
+
       # user interaction
       ask_user 'Task IV.1' "./tmp"
+      if [[ $? == 1 ]]; then echo "exit: $LINENO"; exit 1; fi
 
       # and leave (;;) or  move on (;&)
       ;;
-    # ----------------------------------------------------------------------------
+    #doc_begin_main---------------------------------------------------------------
     # Task IV: 
-    # ----------------------------------------------------------------------------
+    #   apply git add ., git commit, git push to all repos
+    #doc_end_main-----------------------------------------------------------------
     task_4) 
       # 1. list of all directories to which you will apply your script
       local directorylist="./*-loop/"
       check_dirlist "$directorylist"
-  	  if [[ $? == 1 ]]; then exit 1; fi
-      
+      if [[ $? == 1 ]]; then echo "exit: $LINENO"; exit 1; fi
+
       # user interaction
       ask_user 'Task IV.2 git status' "./tmp"
-  
+      if [[ $? == 1 ]]; then echo "exit: $LINENO"; exit 1; fi
+
       # 2. check status
       git_status_dirlist "$directorylist"
-  	  if [[ $? == 1 ]]; then exit 1; fi
-      
+      if [[ $? == 1 ]]; then echo "exit: $LINENO"; exit 1; fi
+
       # user interaction
       ask_user 'Task IV.3 git add' "./tmp"
-  
+      if [[ $? == 1 ]]; then echo "exit: $LINENO"; exit 1; fi
+
       # 3. add
       git_add_dirlist "$directorylist"
-  	  if [[ $? == 1 ]]; then exit 1; fi
-      
+      if [[ $? == 1 ]]; then echo "exit: $LINENO"; exit 1; fi
+
       # user interaction
       ask_user 'Task IV.4 git status' "./tmp"
-  
+      if [[ $? == 1 ]]; then echo "exit: $LINENO"; exit 1; fi
+
       # 4. check status
       git_status_dirlist "$directorylist"
-  	  if [[ $? == 1 ]]; then exit 1; fi
-      
+      if [[ $? == 1 ]]; then echo "exit: $LINENO"; exit 1; fi
+
       # user interaction
       ask_user 'Task IV.5 git commit' "./tmp"
-  
+      if [[ $? == 1 ]]; then echo "exit: $LINENO"; exit 1; fi
+
       #5. commit
       timestamp=date
       git_commit_dirlist "$directorylist" "batch run at $timestamp"
       if [[ $? == 1 ]]; then exit 1; fi
-      
+      if [[ $? == 1 ]]; then echo "exit: $LINENO"; exit 1; fi
+
       # user interaction
       ask_user "$directorylist" "./tmp"
-  
+      if [[ $? == 1 ]]; then echo "exit: $LINENO"; exit 1; fi
+
       #6. push
       git push_dirlist "$directorylist"
-      if [[ $? == 1 ]]; then exit 1; fi
-  
+      if [[ $? == 1 ]]; then echo "exit: $LINENO"; exit 1; fi
+
       # Return with code 0
       return 0
 
