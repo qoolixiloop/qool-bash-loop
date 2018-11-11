@@ -106,7 +106,7 @@ doc() { #this function is called from get_options()
 ____EOF
 
   # print load function description
-  generate_doc
+  generate_doc "$1"
 
   # return 1 to indicate that the script shall terminate
   return 1
@@ -158,7 +158,6 @@ generate_doc() { # called by the function doc()
 
   date="11.Nov.2018"
   commandLineOption="$1"
-  echo "$commandLineOption"
   awk \
     -v arg1="\t# Docu: \t automatically generated" \
     -v arg2="${BASH_SOURCE[0]}" \
@@ -242,7 +241,7 @@ get_options() { # this function is called from main()
       # Also a flag type option. Will catch either -b or --bar
       -d|--doc)
         # call function to print doc info and return with 1
-        doc
+        doc "$1"
         [[ $DEBUG == 'y' ]] && echo "--$LINENO ${BASH_SOURCE[0]}:printed doc" 
         return 1
       ;;
@@ -815,7 +814,7 @@ function main() {
   # ---------------------------------------------------------------------------
   #doc_end_main----------------------------------------------------------------
   #============================================================================
-	
+
   # ---------------------------------------------------------------------------
   # Framework related tasks
   # Purpose:
@@ -829,10 +828,10 @@ function main() {
   #
 	# TODO: place your own options into the debug string
   # ---------------------------------------------------------------------------
-	
+
   get_options "$@";
-	if [[ $? == 1 ]]; then exit 1; fi
-	[[ $DEBUG == 'y' ]] && echo "--$LINENO ${BASH_SOURCE[0]}: \
+  if [[ $? == 1 ]]; then exit 1; fi
+  [[ $DEBUG == 'y' ]] && echo "--$LINENO ${BASH_SOURCE[0]}: \
         $?", "$*", "$OUTPUTFILE", $DEBUG
 
   #doc_begin_main--------------------------------------------------------------
@@ -1007,9 +1006,50 @@ function main() {
 # -----------------------------------------------------------------------------
 # Python style: run main() if this script is executed but not if it is sourced
 # -----------------------------------------------------------------------------
-# with the following two line the main() function will be executed, when
-# you execute the script with ./Scriptname.sh
-# in all other cases, where the script is sourced, main() will not be run.
+# I) With the following two lines of code the main() function will be executed,
+#    when you EXECUTE the script "Scriptname" with ./Scriptname.sh
+#    in all other cases, where the script is sourced, main() will not be run.
+#    Let's take a look what the two lines mean:
+#       unset BASH_SOURCE 2>/dev/null
+#       test ".$0" != ".${BASH_SOURCE[0]}" || main "$@"
+#    The first of the two lines tries to unset BASH_SOURCE, if that works out,
+#    your script is most certainly somewhere it should not be, and main() is 
+#    not called. 
+#    The second line tests the condition ".$0" != ".${BASH_SOURCE[0]}". Because
+#    BASH_SOURCE is a reversed stack, this condition is true when the script is
+#    sourced (from another script). The reason is, because then $0 holds the
+#    name of the executed and "${BASH_SOURCE[0}}" the name of the sourced
+#    script. If you source your script on the command line with 
+#    $ . ./Scriptname or $ . Scriptname, then bash is executing your script and
+#    $0 holds the name "-bash". The two bars ( || ) mean that the expression on 
+#    the right side is only executed, when the left side is false.
+#    Check out the following four cases
+#      test 1 == 1 || echo test1   # not printed
+#      test 1 == 2 || echo test2   # printed
+#      test 1 == 1 && echo test1   # printed
+#      test 1 == 2 && echo test2   # printed
+#
+# II)A side note with respect to command line arguments stored in "$@":
+#      The command line string's scope is the script. It is not visible inside
+#      any function. There are at least three ways to access the arguments.
+#      1.) store them into a global variable args=("$@") and access them 
+#          inside the function with "${args[0]}", "${args[1]}", ...
+#          $@ does NOT contain the calling script as first argument, and 
+#          therefore "${args[0]}" does not contain the calling script.
+#      2.) pass them as "$@" as has been done below for the main() function.
+#          pass additional arguments before $@, like so:
+#           func "$arg1" "$arg2" "$arg3" "$@"
+#           after processing the three arguments use shift 3 then you can 
+#            access them with the same numbers as in the scope of the script
+#      3.) pass them as arguments to the function, i.e. as "$0", "$1", ...
+#          but be careful not to change the order, e.g. like so, $3, $1, $2
+#          because then you would have to access command line argument $3 with
+#          $1 inside the function, and that's a bit of a mess.
+#      4.) in extended debug mode (e.g., #!/bin/bash -O extdebug) or with shopt
+#          (e.g., shopt -s extdebug) there is a global variable BASH_ARGV which
+#          you can access.
+#    In this script I use 2.) when I need all command line arguments and 3.) if 
+#    if I only need a subset.
 # -----------------------------------------------------------------------------
 unset BASH_SOURCE 2>/dev/null
 test ".$0" != ".${BASH_SOURCE[0]}" || main "$@"
