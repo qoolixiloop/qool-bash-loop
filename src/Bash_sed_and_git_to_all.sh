@@ -35,9 +35,10 @@
 # TODO: here is the place where you put you framework related functions
 #         1.) version():          to print version info 
 #         2.) doc():              to print documentation info
-#         3.) get_options():      to parse your script options
-#         4.) ask_user():         to navigate
-#         5.) script_sourced_executed(): debug info
+#         3.) generate_doc()      to automatically parse the script with AWK
+#         4.) get_options():      to parse your script options
+#         5.) ask_user():         to navigate
+#         6.) script_sourced_executed(): debug info
 # -----------------------------------------------------------------------------
 #==============================================================================
 
@@ -343,7 +344,7 @@ ask_user() {
 
 
 script_sourced_or_executed() {
-  
+
   #============================================================================
   #doc_begin-------------------------------------------------------------------
   # ---------------------------------------------------------------------------
@@ -371,7 +372,7 @@ script_sourced_or_executed() {
   [[ $DEBUG == 'y' ]] && echo "--$LINENO ${BASH_SOURCE[0]}:sourced?, executed?"
   # ---------------------------------------------------------------------------
   #============================================================================
-  
+
   # compare basename of execution and source name 
   if [[ $(basename "$0") == $(basename "${BASH_SOURCE[0]}") ]]; then
     echo "--$LINENO executed"
@@ -436,7 +437,7 @@ script_sourced_or_executed() {
 
 
 load_file_vars() {
-  
+
   #============================================================================
   #doc_begin-------------------------------------------------------------------
   # ---------------------------------------------------------------------------
@@ -450,7 +451,7 @@ load_file_vars() {
   [[ $DEBUG == 'y' ]] && echo "--$LINENO ${BASH_SOURCE[0]}:load_file_vars()" 
   # ---------------------------------------------------------------------------
   #=============================== ============================================
-  
+
   # running script: extract filename and path information
   fullpath_with_scriptname=$(realpath "${BASH_SOURCE[0]}")
   [[ $DEBUG == 'y' ]] && echo "--$LINENO ${BASH_SOURCE[0]} \
@@ -488,7 +489,7 @@ load_file_vars() {
 
 
 check_filelist(){
-  
+
   #============================================================================
   #doc_begin-------------------------------------------------------------------
   # ---------------------------------------------------------------------------
@@ -511,14 +512,14 @@ check_filelist(){
     # if $file exists (-e) go on
     # otherwise continue with next file in $filelist
     [ -e "$file" ] || continue
-  
+
     # print file infos
     echo "++this file (relative path): $file"
     fname=$(basename "$file")
     echo "++has the name: $fname"
     fdir=$(dirname "$file")
     echo "++and is in the directory: $fdir"
-  
+
   done
   return 0
 
@@ -527,7 +528,7 @@ check_filelist(){
 
 
 check_dirlist() {
-  
+
   #============================================================================
   #doc_begin-------------------------------------------------------------------
   # ---------------------------------------------------------------------------
@@ -547,17 +548,17 @@ check_dirlist() {
 
   # loop through list and print the directory infos
   for directory in $dirlist; do
-  
+
     # if $directory exists (-e) go on
     # otherwise continue with next directory in $dirlist
     [ -e "$directory" ] || continue
-  
+
     # print directory infos
     echo ">>this directory (relative path): $directory"
     echo ">>pwd: $(pwd)"
     echo ">>ls directory: $(ls directory)"
   done
-  
+
   return 0
 
 }
@@ -565,7 +566,7 @@ check_dirlist() {
 
 
 sed_files_md() {
-  
+
   #============================================================================
   #doc_begin-------------------------------------------------------------------
   # ---------------------------------------------------------------------------
@@ -587,51 +588,51 @@ sed_files_md() {
   [[ $DEBUG == 'y' ]] && echo "--$LINENO ${BASH_SOURCE[0]}:sed_files_md()" 
   # ---------------------------------------------------------------------------
   #============================================================================
-  
+
   # input arguments
   local searchpattern=$1
   local replacment=$2
   local filelist=$3
   local dirbak=$4  #backup folder
-  
+
   # temporary file (will be deleted at the end of the function)
   local filetmp="/tmp/out.tmp.$$"
-  
+
   # make a backup directory, if it alreay exists move on
   if [ ! -d "$dirbak" ]; then mkdir -p "$dirbak" || :; fi
-  
+
   # loop through the file list
   for file in $filelist; do
-    
+
     # if $file is a file (-f) and (&&) readable (-r)
     if [ -f "$file" ] && [ -r "$file" ]; then
-      
+
       # make a backup copy of $file into $dirbak before applying sed
       # $file is a relative path with filename. Cut away the / and . 
       local tmp="${file%/*}_${file##*/}"
       local newfilename=${tmp##*/}
       /bin/cp -f "$file" "$dirbak/$newfilename"
-      
+
       # apply sed substitution to $file to whole line (g)
       # avoid inline editing by writing into $filetmp
       sed "s/$searchpattern/$replacment/g" "$file" > $filetmp \
         && mv $filetmp "$file"
-      
+
       # check replacements with diff
       diff "$file" "$dirbak/$newfilename"
       if [[ $? == 1 ]]; then return 1; fi
       ask_user 'next sed' "./tmp"
-    
+
       # else if $file is not a file or not readable
     else
       echo "Error: cannot read $file"
     fi
-  
+
   done
-  
+
   # delete temporary file
   /bin/rm $filetmp
-  
+
   return 0
 
 }
@@ -639,7 +640,7 @@ sed_files_md() {
 
 
 git_status_dirlist() {
-  
+
   #============================================================================
   #doc_begin-------------------------------------------------------------------
   # ---------------------------------------------------------------------------
@@ -655,17 +656,17 @@ git_status_dirlist() {
   [[ $DEBUG == 'y' ]] && echo "--$LINENO ${BASH_SOURCE[0]}:load_file_vars()" 
   # ---------------------------------------------------------------------------
   #============================================================================
-  
+
   # input arguments
   local dirlist="$1"
-  
+
   # loop through the list of directories
   for directory in $dirlist; do
-    
+
     # if $directory exists (-e) go on
     # otherwise continue with next directory in $dirlist
     [ -e "$directory" ] || continue
-    
+
     # show status
     /usr/bin/git status
     ask_user 'next git status' "./tmp"
@@ -677,7 +678,7 @@ git_status_dirlist() {
 
 
 git_add_dirlist() {
-  
+
   #============================================================================
   #doc_begin-------------------------------------------------------------------
   # ---------------------------------------------------------------------------
@@ -693,17 +694,17 @@ git_add_dirlist() {
   [[ $DEBUG == 'y' ]] && echo "--$LINENO ${BASH_SOURCE[0]}:load_file_vars()" 
   # ---------------------------------------------------------------------------
   #============================================================================
- 
+
   # input arguments
   local dirlist="$1"
-  
+
   #loop through list of directories
   for directory in $dirlist; do
-    
+
     # if $directory exists (-e) go on
     # otherwise continue with next directory in $dirlist
     [ -e "$directory" ] || continue
-    
+
     # 
     /usr/bin/git add .
 
@@ -717,7 +718,7 @@ git_add_dirlist() {
 
 
 git_commit_dirlist(){
-  
+
   #============================================================================
   #doc_begin-------------------------------------------------------------------
   # ---------------------------------------------------------------------------
@@ -734,17 +735,17 @@ git_commit_dirlist(){
   [[ $DEBUG == 'y' ]] && echo "--$LINENO ${BASH_SOURCE[0]}:load_file_vars()" 
   # ---------------------------------------------------------------------------
   #============================================================================
-  
+
   # input arguments
   local dirlist="$1"
-  
+
   # loop through directory list
   for directory in $dirlist; do
-    
+
     # if $directory exists (-e) go on
     # otherwise continue with next directory in $dirlist
     [ -e "$directory" ] || continue
-    
+
     # execute task
     /usr/bin/git commit -m "$2"
 
@@ -758,7 +759,7 @@ git_commit_dirlist(){
 
 
 git_push_dirlist(){
-  
+
   #============================================================================
   #doc_begin-------------------------------------------------------------------
   # ---------------------------------------------------------------------------
@@ -774,17 +775,17 @@ git_push_dirlist(){
   [[ $DEBUG == 'y' ]] && echo "--$LINENO ${BASH_SOURCE[0]}:load_file_vars()" 
   # ---------------------------------------------------------------------------
   #============================================================================
-  
+
   # input arguments
   local dirlist="$1"
-  
+
   # loop through directory list
   for directory in $dirlist; do
-    
+
     # if $directory exists (-e) go on
     # otherwise continue with next directory in $dirlist
     [ -e "$directory" ] || continue
-    
+
     # execute task
     /usr/bin/git push
 
@@ -821,12 +822,12 @@ function main() {
   #   get_options:  parses the command line sting 
   #                 reads passed option arguments and takes defined action:
   #                   - prints doc or version strings if script is executed
-	#                     with ---doc or with --version options and exits script.
+  #                     with ---doc or with --version options and exits script.
   #                   - prints debug info if script is run with --debug option
-	#                 $@: passes the command line arguments to the function
-	#                 $?: catches the return status of last command.
+  #                 $@: passes the command line arguments to the function
+  #                 $?: catches the return status of last command.
   #
-	# TODO: place your own options into the debug string
+  # TODO: place your own options into the debug string
   # ---------------------------------------------------------------------------
 
   get_options "$@";
