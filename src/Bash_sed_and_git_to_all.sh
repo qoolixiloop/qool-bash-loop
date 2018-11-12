@@ -31,6 +31,7 @@
 
 
 #==============================================================================
+#doc_begin---------------------------------------------------------------------
 # -----------------------------------------------------------------------------
 # TODO: here is the place where you put you framework related functions
 #         1.) version():          to print version info 
@@ -40,6 +41,7 @@
 #         5.) ask_user():         to navigate
 #         6.) script_sourced_executed(): debug info
 # -----------------------------------------------------------------------------
+#doc_end-----------------------------------------------------------------------
 #==============================================================================
 
 version() { # this function is called from get_options()
@@ -63,7 +65,7 @@ version() { # this function is called from get_options()
   cat << ____EOF
     Author: Roland Benz
     Version: 1
-    Date: 9 Nov.2018
+    Date: 12. Nov.2018
 ____EOF
 
   # return 1 to indicate that the script shall terminate
@@ -106,7 +108,7 @@ doc() { #this function is called from get_options()
     # =========================================================================
 ____EOF
 
-  # print load function description
+  # print function descriptions
   generate_doc "$1"
 
   # return 1 to indicate that the script shall terminate
@@ -226,68 +228,98 @@ get_options() { # this function is called from main()
   unset DEBUG
 
   # As long as there is at least one more argument, keep looping
+  # -gt is used if string ($#) shall be interpreted as integer
   while [[ $# -gt 0 ]]; do
     [[ $DEBUG == 'y' ]] && echo "--$LINENO ${BASH_SOURCE[0]}:start loop" 
-    
+
     # check the command line arguments string $@
     key="$1"
     case "$key" in
+
       # This is a flag type option. Will catch either -f or --foo
       -v|--version)
-        # call function to print version info and return with 1
-        version
-        [[ $DEBUG == 'y' ]] && echo "--$LINENO ${BASH_SOURCE[0]}:printed version" 
-        return 1
+
+      # call function to print version info
+      version
+      [[ $DEBUG == 'y' ]] && echo "--$LINENO ${BASH_SOURCE[0]}:printed version" 
+
+      # return 1 to indicate that the script shall terminate
+      return 1
+
       ;;
+
       # Also a flag type option. Will catch either -b or --bar
       -d|--doc)
-        # call function to print doc info and return with 1
-        doc "$1"
-        [[ $DEBUG == 'y' ]] && echo "--$LINENO ${BASH_SOURCE[0]}:printed doc" 
-        return 1
+
+      # call function to print doc info
+      doc "$1"
+      [[ $DEBUG == 'y' ]] && echo "--$LINENO ${BASH_SOURCE[0]}:printed doc" 
+
+      # return 1 to indicate that the script shall terminate
+      return 1
+
       ;;
+
       # Also a flag type option. Will catch --verbose or --debug
       --verbose|--debug)
-        # Set global variable DEBUG to 'y' 
-        DEBUG='y'
-        [[ $DEBUG == 'y' ]] && echo "--$LINENO ${BASH_SOURCE[0]}:set DEBUG='y'" 
+
+      # Set global variable DEBUG to 'y' 
+      DEBUG='y'
+      [[ $DEBUG == 'y' ]] && echo "--$LINENO ${BASH_SOURCE[0]}:set DEBUG='y'" 
+
       ;;
+
       # This is an arg value type option.
       # Will catch -t value or --task value
       -t|--task)
-        # Set global variable START_AT_TASK by shifting first
-        shift # past the key and to the value
-        START_AT_TASK="$1"
+
+      # Set global variable START_AT_TASK by shifting first
+      shift # past the key and to the value
+      START_AT_TASK="$1"
+
       ;;
+
       # This is an arg value type option.
       # Will catch -o value or --output-file value
       -o|--output-file)
-        # Set the global variable OUTPUTFILE by shifting first
-        shift # past the key and to the value
-        OUTPUTFILE="$1"
-        [[ $DEBUG == 'y' ]] && echo "--$LINENO ${BASH_SOURCE[0]}:set OUTPUTFILE" 
+
+      # Set the global variable OUTPUTFILE by shifting first
+      shift # past the key and to the value
+      OUTPUTFILE="$1"
+      [[ $DEBUG == 'y' ]] && echo "--$LINENO ${BASH_SOURCE[0]}:set OUTPUTFILE" 
+
       ;;
+
       # This is an arg=value type option. 
       # Will catch -o=value or --output-file=value
       -o=*|--output-file=*)
-        # No need to shift here since the value is part of the same string
-        OUTPUTFILE="${key#*=}"
-        [[ $DEBUG == 'y' ]] && echo "--$LINENO ${BASH_SOURCE[0]}:set OUTPUTFILE" 
+
+      # No need to shift here since the value is part of the same string
+      OUTPUTFILE="${key#*=}"
+      [[ $DEBUG == 'y' ]] && echo "--$LINENO ${BASH_SOURCE[0]}:set OUTPUTFILE" 
+
       ;;
+
+      # If nothing else matches, get in here
       *)
-        # Do whatever you want with extra options
-        echo "Unknown option '$key'"
-        [[ $DEBUG == 'y' ]] && echo "--$LINENO ${BASH_SOURCE[0]}:hit unknown option" 
+      echo "Unknown option '$key'"
+      [[ $DEBUG == 'y' ]] && echo "--$LINENO ${BASH_SOURCE[0]}:hit unknown option" 
+
+      # return 1 to indicate that the script shall terminate
+      return 1
+
       ;;
+
     esac
+
     # Shift after checking all the cases to get the next option
     shift
+
   done
-  
-  # return with code 0
-  [[ $DEBUG == 'y' ]] && echo "--$LINENO ${BASH_SOURCE[0]}:return 0" 
-  
-  return 0
+
+  # return status of the last statement executed
+  [[ $DEBUG == 'y' ]] && echo "--$LINENO ${BASH_SOURCE[0]}:return" 
+  return 
 
 }
 # -----------------------------------------------------------------------------
@@ -314,7 +346,7 @@ ask_user() {
   #============================================================================
   
   # print name of the next code block
-  echo "$1" 
+  echo; echo "$1" 
   
   # print instructions
   echo "continue (c), skip (s), return (r)?"
@@ -340,6 +372,8 @@ ask_user() {
         ;;
     esac
   done
+  
+  # this line should never be reached
   # return 1 to indicate that the script shall terminate
   return 1
 
@@ -379,12 +413,13 @@ script_sourced_or_executed() {
 
   # compare basename of execution and source name 
   if [[ $(basename "$0") == $(basename "${BASH_SOURCE[0]}") ]]; then
-    echo "--$LINENO executed"
+    echo; echo "--$LINENO executed"
   else
-    echo "--$LINENO sourced from $0"
+    echo; echo "--$LINENO sourced from $0"
   fi
 
-  return 0
+  # return status of the last statement executed
+  return
 
 }
 # -----------------------------------------------------------------------------
@@ -392,11 +427,13 @@ script_sourced_or_executed() {
 
 
 #==============================================================================
+#doc_begin---------------------------------------------------------------------
 # -----------------------------------------------------------------------------
 # TODO: This is the place where you put your:
 #         1.) sourced modules
 #         2.) your executed modules
 # -----------------------------------------------------------------------------
+#doc_end-----------------------------------------------------------------------
 [[ $DEBUG == 'y' ]] && echo "--$LINENO ${BASH_SOURCE[0]}:sourced modules" 
 # -----------------------------------------------------------------------------
 #==============================================================================
@@ -412,6 +449,7 @@ script_sourced_or_executed() {
 
 
 #==============================================================================
+#doc_begin---------------------------------------------------------------------
 # -----------------------------------------------------------------------------
 # TODO: This is the place where to put your: 
 #         1.) shell variables (have global scope in script and functions)
@@ -427,6 +465,7 @@ script_sourced_or_executed() {
 #             git_push_dirlist():   apply git push to directory list
 #             main():               main function
 # -----------------------------------------------------------------------------
+#doc_end-----------------------------------------------------------------------
 [[ $DEBUG == 'y' ]] && echo "--$LINENO ${BASH_SOURCE[0]}:function definitions" 
 # -----------------------------------------------------------------------------
 #==============================================================================
@@ -447,9 +486,11 @@ load_file_vars() {
   # ---------------------------------------------------------------------------
   # load_file_vars(): For Task I
   # Purpose:
-  #   prints filesystem information 
-  #   check the info to make sure you apply the script to the direcory 
-  #   => qoolixiloopAgithub/ (hardcoded below)
+  #   prints filesystem information in order to visually check:
+  #     => to make sure you apply the script to the right direcory 
+  # Arguments:
+  #   $1: directory the script must be and run (take no risks)
+  #     => qoolixiloopAgithub/ (that's my local directory)
   # ---------------------------------------------------------------------------
   #doc_end---------------------------------------------------------------------
   [[ $DEBUG == 'y' ]] && echo "--$LINENO ${BASH_SOURCE[0]}:load_file_vars()" 
@@ -458,35 +499,39 @@ load_file_vars() {
 
   # running script: extract filename and path information
   fullpath_with_scriptname=$(realpath "${BASH_SOURCE[0]}")
-  [[ $DEBUG == 'y' ]] && echo "--$LINENO ${BASH_SOURCE[0]} \
+  echo; echo "--$LINENO \
     fullpath_with_scriptname: $fullpath_with_scriptname"
 
   relativepath_no_scriptname=$(dirname "${BASH_SOURCE[0]}")
-  [[ $DEBUG == 'y' ]] && echo "--$LINENO ${BASH_SOURCE[0]} \
+  echo "--$LINENO \
     relativepath_no_scriptname: $relativepath_no_scriptname"
 
   fullpath_no_scriptname=${fullpath_with_scriptname%/*}
-  [[ $DEBUG == 'y' ]] && echo "--$LINENO ${BASH_SOURCE[0]} \
+  echo "--$LINENO  \
     fullpath_no_scriptname: $fullpath_no_scriptname"
 
-  # cd into this directory to be sure
+  # cd into the script directory (to be sure)
   cd "$fullpath_no_scriptname" || return
-  [[ $DEBUG == 'y' ]] && echo "--$LINENO ${BASH_SOURCE[0]} pwd: $(pwd)"
+  echo "--$LINENO pwd: $(pwd)"
   scriptname=$(basename "${BASH_SOURCE[0]}")
   scriptname_=${fullpath_with_scriptname##*/}
-  [[ $DEBUG == 'y' ]] && echo "--$LINENO ${BASH_SOURCE[0]} \
-    scriptname: $scriptname, $scriptname_"
+  echo "--$LINENO scriptname: $scriptname"
+  echo "--$LINENO scriptname: $scriptname_"
 
   parent_directory=${fullpath_no_scriptname##*/}
-  [[ $DEBUG == 'y' ]] && echo "--$LINENO ${BASH_SOURCE[0]} \
+  echo "--$LINENO \
     parent_directory: $parent_directory"
 
-  # running script: check that it is running in the right folder
-  if [[ $parent_directory != 'qoolixiloopAgithub' ]]; then
+  # make main() know, if script is running in the wrong directory
+  if [[ $parent_directory != "$1" ]]; then
+    
     # return 1 to indicate that the script shall terminate
     return 1
+  
   fi
-  return 0
+  
+  # return status of the last statement executed
+  return
 
 }
 # -----------------------------------------------------------------------------
@@ -505,11 +550,11 @@ check_filelist(){
   #doc_end---------------------------------------------------------------------
   [[ $DEBUG == 'y' ]] && echo "--$LINENO ${BASH_SOURCE[0]}:check_filelist()" 
   # ---------------------------------------------------------------------------
-  #============================================================================
+  #===== =======================================================================
 
   # create a file list with all Home.md files
   local filelist="$1"
-  echo "filelist: $filelist"
+  echo; echo "--$LINENO filelist: $filelist"; echo
 
   # loop through list and print the file infos
   for file in $filelist; do
@@ -518,14 +563,16 @@ check_filelist(){
     [ -e "$file" ] || continue
 
     # print file infos
-    echo "++this file (relative path): $file"
+    echo "--$LINENO this file (relative path): $file"
     fname=$(basename "$file")
-    echo "++has the name: $fname"
+    echo "--$LINENO has the name: $fname"
     fdir=$(dirname "$file")
-    echo "++and is in the directory: $fdir"
+    echo "--$LINENO and is in the directory: $fdir"
 
   done
-  return 0
+  
+  # return status of the last statement executed
+  return
 
 }
 # -----------------------------------------------------------------------------
@@ -548,7 +595,7 @@ check_dirlist() {
 
   #create a file list with all the directories 
   local dirlist="$1"
-  echo "dirlist: $dirlist"
+  echo; echo "--$LINENO dirlist: $dirlist"; echo
 
   # loop through list and print the directory infos
   for directory in $dirlist; do
@@ -558,19 +605,21 @@ check_dirlist() {
     [ -e "$directory" ] || continue
 
     # print directory infos
-    echo ">>this directory (relative path): $directory"
-    echo ">>pwd: $(pwd)"
-    echo ">>ls directory: $(ls directory)"
+    echo "--$LINENO this directory (relative path): $directory"
+    echo "--$LINENO pwd: $(pwd)"
+    echo "--$LINENO ls directory: $(ls directory)"
+
   done
 
-  return 0
+  # return status of the last statement executed
+  return
 
 }
 # -----------------------------------------------------------------------------
 
 
 sed_files_md() {
-
+ 
   #============================================================================
   #doc_begin-------------------------------------------------------------------
   # ---------------------------------------------------------------------------
@@ -595,52 +644,72 @@ sed_files_md() {
 
   # input arguments
   local searchpattern=$1
-  local replacment=$2
+  local replacement=$2
   local filelist=$3
   local dirbak=$4  #backup folder
+  echo; echo "--$LINENO search pattern: $searchpattern"
+  echo "--$LINENO replacement: $replacement";
 
-  # temporary file (will be deleted at the end of the function)
+  
+  # temporary file: used for sed, and then moved
+  # (if for some reason it still exists, 
+  #  it will be deleted at the end of the function)
   local filetmp="/tmp/out.tmp.$$"
 
-  # make a backup directory, if it alreay exists move on
-  if [ ! -d "$dirbak" ]; then mkdir -p "$dirbak" || :; fi
+  # you may come across a line like the following. Ignore it.
+  #   if [ ! -d "$dirbak" ]; then mkdir -p "$dirbak" || :; fi
+  # the -p flag is doing all that already: it checks whether
+  # the directory exists, if not creates it with all its parent
+  # directories. If it exists it does not complain, just goes on.
+  mkdir -p "$dirbak"
 
   # loop through the file list
   for file in $filelist; do
 
     # if $file is a file (-f) and (&&) readable (-r)
+    # do not use depreciated "-a" for and use (&&)
     if [ -f "$file" ] && [ -r "$file" ]; then
 
-      # make a backup copy of $file into $dirbak before applying sed
-      # $file is a relative path with filename. Cut away the / and . 
-      # if file exists make a backup filename.~1~/~2~/...
-      local tmp="${file%/*}_${file##*/}"
-      local newfilename=${tmp##*/}
+      # make a new name with $file: it is a relative path incl. file name. 
+      # cut the string three times to get "formerParentFolder_fileName"
+      local newfilename_intermediate_step="${file%/*}_${file##*/}"
+      local newfilename=${newfilename_intermediate_step##*/}
+      
+      # make a backup copy of $file into $dirbak before anything else.
+      # $file is a relative path with filename.
+      # the $newfilename string we have just created.
+      # if $newfilename already exists  in the filesystem, 
+      # make a backup filename.~1~/~2~/... (--backup=t)
       /bin/cp --backup=t "$file" "$dirbak/$newfilename"
-      echo "made copy: $newfilename (and backup if file existed)"
+      echo "--$LINENO made copy: $newfilename \
+        (and a backup if the file already existed)"
 
       # apply sed substitution to $file to whole line (g)
       # avoid inline editing by writing into $filetmp
-      sed "s/$searchpattern/$replacment/g" "$file" > $filetmp \
+      sed "s/$searchpattern/$replacement/g" "$file" > $filetmp \
         && mv $filetmp "$file"
-      echo "checked file: $file (if you see no diff no changes were made)"
+      echo "--$LINENO checked file: $file \
+        (if you see no diff, no changes were made)";echo
 
-      # check replacements with diff
+      # print replacements with diff
       diff "$file" "$dirbak/$newfilename"
-      ask_user 'next sed' "./tmp"
-      if [[ $? == 1 ]]; then echo "exit: $LINENO"; exit 1; fi
+      
+      # user interaction: if function returns 1, exit function with return 1
+      if [[ $(ask_user 'next sed' "./tmp") == 1 ]]; then
+        echo "exit: $LINENO"; return 1; fi
             
 
-      # else if $file is not a file or not readable
+    # else if $file is not a file or not readable
     else
       echo "Error: cannot read $file"
     fi
 
   done
 
-  # delete temporary file if it not exist || move on
+  # delete temporary file if it not exists (||) then  move on (true)
   /bin/rm -v -i $filetmp || true
 
+  # return status of the last statement executed
   return 
 
 }
@@ -664,7 +733,7 @@ git_status_dirlist() {
   [[ $DEBUG == 'y' ]] && echo "--$LINENO ${BASH_SOURCE[0]}:load_file_vars()" 
   # ---------------------------------------------------------------------------
   #============================================================================
-
+ 
   # input arguments
   local dirlist="$1"
 
@@ -677,9 +746,15 @@ git_status_dirlist() {
 
     # show status
     /usr/bin/git status
-    ask_user 'next git status' "./tmp"
+    
+    # user interaction: if function returns 1, exit function with return 1
+    if [[ $(ask_user 'next git status' "./tmp") == 1 ]]; then
+        echo; echo "exit: $LINENO"; return 1; fi
+
   done
-  return 0
+  
+  # return status of the last statement executed
+  return
 
 }
 # -----------------------------------------------------------------------------
@@ -716,11 +791,15 @@ git_add_dirlist() {
     # 
     /usr/bin/git add .
 
-    # user interaction
-    ask_user 'next git add' "./tmp"
-  done
-  retrn 0
+    # user interaction: if function returns 1, exit function with return 1
+    if [[ $(ask_user 'next git add .' "./tmp") == 1 ]]; then
+        echo "exit: $LINENO"; return 1; fi
 
+  done
+  
+  # return status of the last statement executed
+  return
+  
 }
 # -----------------------------------------------------------------------------
 
@@ -754,14 +833,18 @@ git_commit_dirlist(){
     # otherwise continue with next directory in $dirlist
     [ -e "$directory" ] || continue
 
-    # execute task
+    # execute task: commit with message (m)
     /usr/bin/git commit -m "$2"
 
-    # user interaction
-    ask_user 'next git commit' "./tmp"
-  done
-  return 0
+    # user interaction: if function returns 1, exit function with return 1
+    if [[ $(ask_user 'next git commit' "./tmp") == 1 ]]; then
+        echo "exit: $LINENO"; return 1; fi
 
+  done
+  
+  # return status of the last statement executed
+  return
+  
 }
 # -----------------------------------------------------------------------------
 
@@ -797,11 +880,15 @@ git_push_dirlist(){
     # execute task
     /usr/bin/git push
 
-    # user interaction
-    ask_user 'next git push' "./tmp"
-  done
-  return 0
+    # user interaction: if function returns 1, exit function with return 1
+    if [[ $(ask_user 'next git push' "./tmp") == 1 ]]; then
+        echo "exit: $LINENO"; return 1; fi
 
+  done
+  
+  # return status of the last statement executed
+  return
+  
 }
 # -----------------------------------------------------------------------------
 
@@ -867,12 +954,12 @@ function main() {
     # -------------------------------------------------------------------------
     #doc_end_main--------------------------------------------------------------
     task_1|Task_1|task1|Task1|t1|T1|1)
-      load_file_vars
-      if ! $?; then echo "exit: $LINENO"; exit 1; fi
+      if load_file_vars "qoolixiloopAgithub"; then
+        echo "exit: $LINENO"; exit 1; fi
 
-      # user interaction
-      ask_user 'Task II.1' "./tmp"
-      if [[ $? == 1 ]]; then echo "exit: $LINENO"; exit 1; fi
+      # user interaction: if function returns 1, exit script
+      if [[ $(ask_user 'Task II.1' "./tmp") == 1 ]]; then
+        echo "exit: $LINENO"; exit 1; fi
 
       # and leave (;;) or  move on (;&) 
       ;&
@@ -885,12 +972,12 @@ function main() {
     task_2|Task_2|task2|Task2|t2|T2|2) 
       # 1. list of all Home.md files to which you will apply your script
       local filelist_home_md="./*-loop.wiki/Home.md"
-      check_filelist "$filelist_home_md"
-      if ! $?; then echo "exit: $LINENO"; exit 1; fi
+      if check_filelist "$filelist_home_md"; then
+        echo "exit: $LINENO"; exit 1; fi
 
-      # user interaction
-      ask_user 'Task II.2' "./tmp"
-      if [[ $? == 1 ]]; then echo "exit: $LINENO"; exit 1; fi
+      # user interaction: if function returns 1, exit script
+      if [[ $(ask_user 'Task II.2' "./tmp") == 1 ]]; then
+        echo "exit: $LINENO"; exit 1; fi
 
       # 2.1 give in the two variables TODO:
       searchpattern='Links to all other repositories'
@@ -900,13 +987,13 @@ function main() {
       #     for each file change the diff will be printed
       #     after every diff there is a user interaction
       local dirbak_Home_md=./bak_Home_md/
-      sed_files_md "$searchpattern" "$replacement" \
-        "$filelist_home_md" "$dirbak_Home_md"
-      if ! $?; then echo "exit: $LINENO"; exit 1; fi
+      if sed_files_md "$searchpattern" "$replacement" \
+        "$filelist_home_md" "$dirbak_Home_md"; then
+        echo "exit: $LINENO"; exit 1; fi
 
-      # user interaction 
-      ask_user 'Task III.1' "./tmp"
-      if [[ $? == 1 ]]; then echo "exit: $LINENO"; exit 1; fi
+      # user interaction: if function returns 1, exit script
+      if [[ $(ask_user 'Task III.1' "./tmp") == 1 ]]; then
+        echo "exit: $LINENO"; exit 1; fi
 
       # and leave (;;) or  move on (;&)
       ;;
@@ -919,12 +1006,12 @@ function main() {
     task_3|Task_3|task3|Task3|t3|T3|3)
       # 1. list of all README.md files to which you will apply your script
       local filelist_README_md="./*-loop/README.md"
-      check_filelist "$filelist_README_md"
-      if ! $?; then echo "exit: $LINENO"; exit 1; fi
+      if check_filelist "$filelist_README_md"; then
+        echo "exit: $LINENO"; exit 1; fi
 
-      # user interaction
-      ask_user 'Task III.2' "./tmp"
-      if [[ $? == 1 ]]; then echo "exit: $LINENO"; exit 1; fi
+      # user interaction: if function returns 1, exit script
+      if [[ $(ask_user 'Task III.2' "./tmp") == 1 ]]; then
+        echo "exit: $LINENO"; exit 1; fi
 
       # 2.1 give in the two variables TODO:
       searchpattern=''
@@ -934,13 +1021,13 @@ function main() {
       #     for each file change the diff will be printed
       #     after every diff there is a user interaction
       local dirbak_README_md=./bak_README_md/
-      sed_files_md "$searchpattern" "$replacement" \
-        "$filelist_README_md" "$dirbak_README_md"
-      if ! $?; then echo "exit: $LINENO"; exit 1; fi
+      if sed_files_md "$searchpattern" "$replacement" \
+        "$filelist_README_md" "$dirbak_README_md"; then
+        echo "exit: $LINENO"; exit 1; fi
 
-      # user interaction
-      ask_user 'Task IV.1' "./tmp"
-      if [[ $? == 1 ]]; then echo "exit: $LINENO"; exit 1; fi
+      # user interaction: if function returns 1, exit script
+      if [[ $(ask_user 'Task IV.1' "./tmp") == 1 ]]; then
+        echo "exit: $LINENO"; exit 1; fi
 
       # and leave (;;) or  move on (;&)
       ;;
@@ -953,49 +1040,49 @@ function main() {
     task_4|Task_4|task4|Task4|t4|T4|4) 
       # 1. list of all directories to which you will apply your script
       local directorylist="./*-loop/"
-      check_dirlist "$directorylist"
-      if ! $?; then echo "exit: $LINENO"; exit 1; fi
+      if check_dirlist "$directorylist"; then
+        echo "exit: $LINENO"; exit 1; fi
 
-      # user interaction
-      ask_user 'Task IV.2 git status' "./tmp"
-      if [[ $? == 1 ]]; then echo "exit: $LINENO"; exit 1; fi
+      # user interaction: if function returns 1, exit script
+      if [[ $(ask_user 'Task IV.2 git status' "./tmp") == 1 ]]; then
+        echo "exit: $LINENO"; exit 1; fi
 
       # 2. check status
-      git_status_dirlist "$directorylist"
-      if ! $?; then echo "exit: $LINENO"; exit 1; fi
+      if git_status_dirlist "$directorylist"; then
+        echo "exit: $LINENO"; exit 1; fi
 
-      # user interaction
-      ask_user 'Task IV.3 git add' "./tmp"
-      if [[ $? == 1 ]]; then echo "exit: $LINENO"; exit 1; fi
+      # user interaction: if function returns 1, exit script
+      if [[ $(ask_user 'Task IV.3 git add' "./tmp") == 1 ]]; then
+        echo "exit: $LINENO"; exit 1; fi
 
       # 3. add
-      git_add_dirlist "$directorylist"
-      if ! $?; then echo "exit: $LINENO"; exit 1; fi
+      if git_add_dirlist "$directorylist"; then
+        echo "exit: $LINENO"; exit 1; fi
 
-      # user interaction
-      ask_user 'Task IV.4 git status' "./tmp"
-      if [[ $? == 1 ]]; then echo "exit: $LINENO"; exit 1; fi
+      # user interaction: if function returns 1, exit script
+      if [[ $(ask_user 'Task IV.4 git status' "./tmp") == 1 ]]; then
+        echo "exit: $LINENO"; exit 1; fi
 
       # 4. check status
-      git_status_dirlist "$directorylist"
-      if ! $?; then echo "exit: $LINENO"; exit 1; fi
+      if git_status_dirlist "$directorylist"; then
+        echo "exit: $LINENO"; exit 1; fi
 
-      # user interaction
-      ask_user 'Task IV.5 git commit' "./tmp"
-      if [[ $? == 1 ]]; then echo "exit: $LINENO"; exit 1; fi
+      # user interaction: if function returns 1, exit script
+      if [[ $(ask_user 'Task IV.5 git commit' "./tmp") == 1 ]]; then
+        echo "exit: $LINENO"; exit 1; fi
 
       #5. commit
       timestamp=date
-      git_commit_dirlist "$directorylist" "batch run at $timestamp"
-      if ! $?; then echo "exit: $LINENO"; exit 1; fi
+      if git_commit_dirlist "$directorylist" "batch run at $timestamp"; then
+        echo "exit: $LINENO"; exit 1; fi
 
-      # user interaction
-      ask_user "$directorylist" "./tmp"
-      if [[ $? == 1 ]]; then echo "exit: $LINENO"; exit 1; fi
+      # user interaction: if function returns 1, exit script
+      if [[ $(ask_user "$directorylist" "./tmp") == 1 ]]; then
+        echo "exit: $LINENO"; exit 1; fi
 
       #6. push
-      git push_dirlist "$directorylist"
-      if ! $?; then echo "exit: $LINENO"; exit 1; fi
+      if git push_dirlist "$directorylist"; then
+        echo "exit: $LINENO"; exit 1; fi
 
       # Return with code 0
       return 0
