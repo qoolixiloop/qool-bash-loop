@@ -320,22 +320,26 @@ ask_user() {
   echo "continue (c), skip (s), return (r)?"
   
   # wait for, read and store user input into
-  local ANSWER=''
-  read -r $ANSWER
+  local ANSWER
   
   # check users answer and act as explained in the function discription
-  case "$ANSWER" in
-    c) echo "continue" > "$2"
-      ;;
-    s) echo "skip" > "$2"
-      ;;
-    r) echo "return" > "$2"
-      return 1
-      ;;
-    *) echo "type c: continue, s: skip, r: return" 
-      ;;
-  esac
-
+  # endless loop until c, s, or r are entered
+  while true; do
+    read -r ANSWER
+    case "$ANSWER" in
+      c) echo "continue"   > "$2"
+        return 0
+        ;;
+      s) echo "skip (not implemented, same as return"   > "$2"
+        return 1
+        ;;
+      r) echo "returns"   > "$2"
+        return 1
+        ;;
+      *) echo "type c: continue, s: skip, r: return" 
+        ;;
+    esac
+  done
   # return 1 to indicate that the script shall terminate
   return 1
 
@@ -609,19 +613,23 @@ sed_files_md() {
 
       # make a backup copy of $file into $dirbak before applying sed
       # $file is a relative path with filename. Cut away the / and . 
+      # if file exists make a backup filename.~1~/~2~/...
       local tmp="${file%/*}_${file##*/}"
       local newfilename=${tmp##*/}
-      /bin/cp -f "$file" "$dirbak/$newfilename"
+      /bin/cp --backup=t "$file" "$dirbak/$newfilename"
+      echo "made copy: $newfilename (and backup if file existed)"
 
       # apply sed substitution to $file to whole line (g)
       # avoid inline editing by writing into $filetmp
       sed "s/$searchpattern/$replacment/g" "$file" > $filetmp \
         && mv $filetmp "$file"
+      echo "checked file: $file (if you see no diff no changes were made)"
 
       # check replacements with diff
       diff "$file" "$dirbak/$newfilename"
-      if [[ $? == 1 ]]; then return 1; fi
       ask_user 'next sed' "./tmp"
+      if [[ $? == 1 ]]; then echo "exit: $LINENO"; exit 1; fi
+            
 
       # else if $file is not a file or not readable
     else
@@ -630,10 +638,10 @@ sed_files_md() {
 
   done
 
-  # delete temporary file
-  /bin/rm $filetmp
+  # delete temporary file if it not exist || move on
+  /bin/rm -v -i $filetmp || true
 
-  return 0
+  return 
 
 }
 # -----------------------------------------------------------------------------
@@ -860,7 +868,7 @@ function main() {
     #doc_end_main--------------------------------------------------------------
     task_1|Task_1|task1|Task1|t1|T1|1)
       load_file_vars
-      if [[ $? == 1 ]]; then echo "exit: $LINENO"; exit 1; fi
+      if ! $?; then echo "exit: $LINENO"; exit 1; fi
 
       # user interaction
       ask_user 'Task II.1' "./tmp"
@@ -874,11 +882,11 @@ function main() {
     #  apply sed to all Home.md files  
     # -------------------------------------------------------------------------
     #doc_end_main--------------------------------------------------------------
-    task_2) 
+    task_2|Task_2|task2|Task2|t2|T2|2) 
       # 1. list of all Home.md files to which you will apply your script
       local filelist_home_md="./*-loop.wiki/Home.md"
       check_filelist "$filelist_home_md"
-      if [[ $? == 1 ]]; then echo "exit: $LINENO"; exit 1; fi
+      if ! $?; then echo "exit: $LINENO"; exit 1; fi
 
       # user interaction
       ask_user 'Task II.2' "./tmp"
@@ -894,7 +902,7 @@ function main() {
       local dirbak_Home_md=./bak_Home_md/
       sed_files_md "$searchpattern" "$replacement" \
         "$filelist_home_md" "$dirbak_Home_md"
-      if [[ $? == 1 ]]; then echo "exit: $LINENO"; exit 1; fi
+      if ! $?; then echo "exit: $LINENO"; exit 1; fi
 
       # user interaction 
       ask_user 'Task III.1' "./tmp"
@@ -908,11 +916,11 @@ function main() {
     #   apply sed to all README.md files 
     # -------------------------------------------------------------------------
     #doc_end_main--------------------------------------------------------------
-    task3)
+    task_3|Task_3|task3|Task3|t3|T3|3)
       # 1. list of all README.md files to which you will apply your script
       local filelist_README_md="./*-loop/README.md"
       check_filelist "$filelist_README_md"
-      if [[ $? == 1 ]]; then echo "exit: $LINENO"; exit 1; fi
+      if ! $?; then echo "exit: $LINENO"; exit 1; fi
 
       # user interaction
       ask_user 'Task III.2' "./tmp"
@@ -928,7 +936,7 @@ function main() {
       local dirbak_README_md=./bak_README_md/
       sed_files_md "$searchpattern" "$replacement" \
         "$filelist_README_md" "$dirbak_README_md"
-      if [[ $? == 1 ]]; then echo "exit: $LINENO"; exit 1; fi
+      if ! $?; then echo "exit: $LINENO"; exit 1; fi
 
       # user interaction
       ask_user 'Task IV.1' "./tmp"
@@ -942,11 +950,11 @@ function main() {
     #   apply git add ., git commit, git push to all repos
     # -------------------------------------------------------------------------
     #doc_end_main--------------------------------------------------------------
-    task_4) 
+    task_4|Task_4|task4|Task4|t4|T4|4) 
       # 1. list of all directories to which you will apply your script
       local directorylist="./*-loop/"
       check_dirlist "$directorylist"
-      if [[ $? == 1 ]]; then echo "exit: $LINENO"; exit 1; fi
+      if ! $?; then echo "exit: $LINENO"; exit 1; fi
 
       # user interaction
       ask_user 'Task IV.2 git status' "./tmp"
@@ -954,7 +962,7 @@ function main() {
 
       # 2. check status
       git_status_dirlist "$directorylist"
-      if [[ $? == 1 ]]; then echo "exit: $LINENO"; exit 1; fi
+      if ! $?; then echo "exit: $LINENO"; exit 1; fi
 
       # user interaction
       ask_user 'Task IV.3 git add' "./tmp"
@@ -962,7 +970,7 @@ function main() {
 
       # 3. add
       git_add_dirlist "$directorylist"
-      if [[ $? == 1 ]]; then echo "exit: $LINENO"; exit 1; fi
+      if ! $?; then echo "exit: $LINENO"; exit 1; fi
 
       # user interaction
       ask_user 'Task IV.4 git status' "./tmp"
@@ -970,7 +978,7 @@ function main() {
 
       # 4. check status
       git_status_dirlist "$directorylist"
-      if [[ $? == 1 ]]; then echo "exit: $LINENO"; exit 1; fi
+      if ! $?; then echo "exit: $LINENO"; exit 1; fi
 
       # user interaction
       ask_user 'Task IV.5 git commit' "./tmp"
@@ -979,8 +987,7 @@ function main() {
       #5. commit
       timestamp=date
       git_commit_dirlist "$directorylist" "batch run at $timestamp"
-      if [[ $? == 1 ]]; then exit 1; fi
-      if [[ $? == 1 ]]; then echo "exit: $LINENO"; exit 1; fi
+      if ! $?; then echo "exit: $LINENO"; exit 1; fi
 
       # user interaction
       ask_user "$directorylist" "./tmp"
@@ -988,7 +995,7 @@ function main() {
 
       #6. push
       git push_dirlist "$directorylist"
-      if [[ $? == 1 ]]; then echo "exit: $LINENO"; exit 1; fi
+      if ! $?; then echo "exit: $LINENO"; exit 1; fi
 
       # Return with code 0
       return 0
