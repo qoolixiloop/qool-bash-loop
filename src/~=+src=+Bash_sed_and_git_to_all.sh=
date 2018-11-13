@@ -9,79 +9,76 @@ setlocal fml=1
 setlocal fdn=20
 setlocal fen
 silent! normal! zE
-4,13fold
-14,38fold
-41,53fold
-56,70fold
-71,81fold
-87,101fold
-102,124fold
-130,158fold
-159,211fold
-217,228fold
-229,235fold
-241,266fold
-267,376fold
-382,399fold
-400,432fold
-438,465fold
-466,476fold
-482,492fold
-493,497fold
-501,521fold
-533,548fold
-549,587fold
-593,605fold
-606,628fold
-634,646fold
-647,674fold
-680,701fold
-702,779fold
-785,800fold
-801,838fold
-843,858fold
-859,895fold
-901,917fold
-918,954fold
-960,975fold
-976,1012fold
-1018,1048fold
-1049,1089fold
-1095,1109fold
-1110,1123fold
-1124,1129fold
-1130,1144fold
-1147,1152fold
-1154,1164fold
-1166,1172fold
-1174,1204fold
-1206,1212fold
-1214,1244fold
-1246,1252fold
-1254,1267fold
-1269,1275fold
-1277,1288fold
-1290,1296fold
-1298,1309fold
-1311,1317fold
-1319,1332fold
-1334,1340fold
-1342,1350fold
-1352,1358fold
-1360,1368fold
-1371,1372fold
-1383,1404fold
-1405,1427fold
-1428,1432fold
-1018
-normal! zo
-1049
-normal! zo
-let s:l = 1362 - ((85 * winheight(0) + 16) / 33)
+4,15fold
+48,48fold
+16,48fold
+51,63fold
+66,80fold
+81,91fold
+97,111fold
+112,135fold
+141,172fold
+173,226fold
+232,244fold
+245,252fold
+258,286fold
+287,413fold
+419,438fold
+439,471fold
+477,505fold
+506,516fold
+522,559fold
+560,565fold
+569,592fold
+604,619fold
+620,658fold
+664,676fold
+677,699fold
+705,717fold
+718,745fold
+751,772fold
+773,850fold
+856,871fold
+872,909fold
+914,929fold
+930,966fold
+972,988fold
+989,1026fold
+1032,1047fold
+1048,1084fold
+1090,1120fold
+1121,1183fold
+1189,1206fold
+1207,1221fold
+1222,1226fold
+1227,1242fold
+1245,1250fold
+1252,1262fold
+1264,1270fold
+1272,1302fold
+1304,1310fold
+1312,1342fold
+1344,1350fold
+1352,1368fold
+1370,1376fold
+1378,1395fold
+1397,1403fold
+1405,1422fold
+1424,1430fold
+1432,1452fold
+1454,1460fold
+1462,1476fold
+1478,1484fold
+1486,1504fold
+1507,1508fold
+1516,1541fold
+1542,1565fold
+1566,1570fold
+let s:l = 1498 - ((102 * winheight(0) + 16) / 33)
 if s:l < 1 | let s:l = 1 | endif
 exe s:l
 normal! zt
-1362
+1498
 normal! 01|
 let &so = s:so_save | let &siso = s:siso_save
 doautoall SessionLoadPost
