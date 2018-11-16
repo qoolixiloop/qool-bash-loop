@@ -21,8 +21,8 @@
 #   3.) to get doc info:     $ ./Scriptname --doc
 #   4.) to run tasks:        get a complete task list with --help option
 #   4.1)   general cases:    $ ./Scriptname --task task_1_ { _3_, _4_ }
-#   4.2    special cases:    $ SEARCH="mySearch" REPLACE="myReplacment" \
-#          (global vars)     $ ./Scriptname --task_2_ { home_md, readme_md }
+#   4.2)   special cases:    $ SEARCH="mySearch" REPLACE="myReplacment" \
+#          (with global vars)    ./Scriptname --task_2_ { home_md, readme_md }
 #   5.) run with debug info: $ DEBUG='y' ./Scriptname --debug
 # 
 # Show debug info:
@@ -1229,10 +1229,15 @@ function main() {
   # main(): user related tasks
   #
   # Purpose
-  #  Task_1_:    load file system variables, to check them
-  #  Task_2_:    apply sed to all Home.md or README.md files
-  #  Task_3_:    apply git status, add ., commit, push to all repos
-  #  Task_4_:    the same as above but only one loop per repo.
+  #  Task_1_checkpath:     load file system variables, to check them.
+  #  Task_2_home_md:       apply sed to all Home.md files.
+  #  Task_2_readme_md:     apply sed to all README.md files.
+  #  Task_3_repos:         show all repos.
+  #  Task_3_status:        apply git status to all repos.
+  #  Task_3_add:           apply git add . to all repos.
+  #  Task_3_commit:        apply git commit to all repos.
+  #  Task_3_push:          apply git push to all repos.
+  #  Task_4_git_all_steps: the same as Task_3_... but only one loop per repo.
   #
   # TODO: write your own tasks.
   # ---------------------------------------------------------------------------
@@ -1348,7 +1353,7 @@ function main() {
     #   list all repos
     # -------------------------------------------------------------------------
     #doc_end_main--------------------------------------------------------------
-    Task_3_git_repos|t3_git_repos|3_git_repos)
+    Task_3_git_repos|t3_git_repos|3_gr)
     # Code 
       # list of all directories to which you will apply your script
       local pwd_script    # shell.check warns to make 2 lines, because the
@@ -1374,7 +1379,7 @@ function main() {
     #   apply git add . to all repos
     # -------------------------------------------------------------------------
     #doc_end_main--------------------------------------------------------------
-    Task_3_git_status|t3_git_status|3_git_status)
+    Task_3_git_status|t3_git_status|3_gs)
       # Code
       
       # list of all directories to which you will apply your script
@@ -1401,7 +1406,7 @@ function main() {
     #   apply git add . to all repos
     # -------------------------------------------------------------------------
     #doc_end_main--------------------------------------------------------------
-    Task_3_git_add|t3_git_add|3_git_add)
+    Task_3_git_add|t3_git_add|3_ga)
      # Code 
       
       # list of all directories to which you will apply your script
@@ -1428,7 +1433,7 @@ function main() {
     #   apply git commit to all repos
     # -------------------------------------------------------------------------
     #doc_end_main--------------------------------------------------------------
-    Task_3_git_commit|t3_git_commit|3_git_commit)
+    Task_3_git_commit|t3_git_commit|3_gc)
       # Code
     
       # list of all directories to which you will apply your script
@@ -1458,7 +1463,7 @@ function main() {
     #   apply git push to all repos
     # -------------------------------------------------------------------------
     #doc_end_main--------------------------------------------------------------
-    Task_3_git_push|t3_git_push|3_git_push)
+    Task_3_git_push|t3_git_push|3_gp)
       # Code
     
       # list of all directories to which you will apply your script
@@ -1482,7 +1487,7 @@ function main() {
     #   apply git status, git add ., git commit, git push to all repos
     # -------------------------------------------------------------------------
     #doc_end_main--------------------------------------------------------------
-    task_4_git_all_steps|t4_git_all_steps|4_git_all_steps)
+    Task_4_git_all_steps|t4_git_all_steps|4_gall)
       # Code
     
       # list of all directories to which you will apply your script
@@ -1505,7 +1510,10 @@ function main() {
       ;;
     *)
       # Code 
-      echo "enter: -t task_1, -t task_2, -t task_3 or -t task_4"
+      echo; echo "<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<" 
+      echo ">>> run with option: --task Task_{valid task name}"
+      echo ">>> to get list run with option: --help"
+      echo "<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"; echo
       ;;
   esac
 }
