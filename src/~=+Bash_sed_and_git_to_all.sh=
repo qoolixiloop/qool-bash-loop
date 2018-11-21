@@ -22,93 +22,77 @@ silent! normal! zE
 232,244fold
 245,252fold
 258,286fold
-287,413fold
-419,438fold
-439,510fold
-516,544fold
-545,555fold
-561,598fold
-599,604fold
-608,631fold
-643,658fold
-659,700fold
-706,718fold
-719,741fold
-747,759fold
-760,787fold
-793,814fold
-815,905fold
-911,926fold
-927,976fold
-981,996fold
-997,1045fold
-1051,1067fold
-1068,1117fold
-1123,1138fold
-1139,1187fold
-1193,1223fold
-1224,1342fold
-1348,1365fold
-1366,1380fold
-1381,1385fold
-1386,1406fold
-1409,1414fold
-1416,1439fold
-1441,1447fold
-1449,1505fold
-1507,1513fold
-1515,1571fold
-1573,1579fold
-1581,1610fold
-1612,1618fold
-1620,1650fold
-1652,1658fold
-1660,1690fold
-1692,1698fold
-1700,1733fold
-1735,1741fold
-1743,1757fold
-1759,1765fold
-1767,1785fold
-1788,1791fold
-1788,1792fold
-1800,1825fold
-1826,1849fold
-1850,1854fold
-439
+287,423fold
+429,448fold
+449,520fold
+526,554fold
+555,565fold
+571,608fold
+609,614fold
+618,641fold
+653,668fold
+669,710fold
+716,728fold
+729,751fold
+757,769fold
+770,797fold
+803,907fold
+908,1025fold
+1031,1061fold
+1062,1153fold
+1158,1173fold
+1174,1223fold
+1228,1243fold
+1244,1292fold
+1298,1314fold
+1315,1364fold
+1370,1385fold
+1386,1434fold
+1440,1470fold
+1471,1589fold
+1595,1612fold
+1613,1627fold
+1628,1632fold
+1633,1653fold
+1656,1661fold
+1663,1686fold
+1688,1694fold
+1696,1754fold
+1756,1762fold
+1764,1822fold
+1824,1830fold
+1832,1861fold
+1863,1869fold
+1871,1901fold
+1903,1909fold
+1911,1941fold
+1943,1949fold
+1951,1984fold
+1986,1992fold
+1994,2008fold
+2010,2016fold
+2018,2036fold
+2039,2042fold
+2039,2043fold
+2051,2076fold
+2077,2100fold
+2101,2105fold
+757
 normal! zo
-815
+803
 normal! zo
-927
+908
 normal! zo
-997
+1696
 normal! zo
-1068
+1764
 normal! zo
-1139
-normal! zo
-1224
-normal! zo
-1416
-normal! zo
-1449
-normal! zo
-1515
-normal! zo
-1581
-normal! zo
-1620
-normal! zo
-1660
-normal! zo
-1700
-normal! zo
-let s:l = 1458 - ((33 * winheight(0) + 16) / 33)
+let s:l = 994 - ((22 * winheight(0) + 16) / 33)
 if s:l < 1 | let s:l = 1 | endif
 exe s:l
 normal! zt
-1458
-normal! 07|
+994
+normal! 038|
 let &so = s:so_save | let &siso = s:siso_save
 doautoall SessionLoadPost
 " vim: set ft=vim :

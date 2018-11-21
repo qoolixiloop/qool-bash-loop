@@ -138,7 +138,7 @@ ____EOF
 
 
 generate_doc() { # called by the function doc()
-
+ 
   #============================================================================
   #doc_begin-------------------------------------------------------------------
   # ---------------------------------------------------------------------------
@@ -799,60 +799,6 @@ check_dirlist() {
 # -----------------------------------------------------------------------------
 
 
-sed_append_url(){
-  
-  # input arguments
-  local file="$1"
-  local filetmp="$2"
-  local appendurl="$3"
-
-  # grep extract qool-XXX-loop from string
-  # -o: only print matching part
-  local pattern_repositories="qool-.*-loop"
-  local search_repository
-  search_repository=$(echo "$appendurl" | grep -o "$pattern_repositories" )
-  echo "search this repository: $search_repository"
-  
-  # pattern to search for (hard coded)
-  local pattern
-  pattern="^\[.*github\.com\/qoolixiloop\/$search_repository\/wiki.*wiki page"
-  echo "pattern to search: $pattern"
-
-  # print to variable: all matched lines
-  local sed_found_matches
-  sed_found_matches=$(sed -n "/$pattern/p" "$file")
-  
-  # print to variable: line numbers of all matched lines
-  local sed_found_matches_on_lines
-  sed_found_matches_on_lines=$(sed -n "/$pattern/{=;}" "$file")
-    
-  if [[ -n "$sed_found_matches"  ]]; then 
-    
-    echo "1.SED) found matches: ${sed_found_matches}"
-    echo "2.SED) found matches on lines: ${sed_found_matches_on_lines}"
-  
-    # extract highest line number
-    # $sed_found_matches_on_lines is a space separated string
-    # -n: string(s) as numerical values
-    local N
-    N=$(echo "${sed_found_matches_on_lines}" | sort -n | tail -1)
-    
-    # apply sed: command $a $text to $file at line $N
-    # avoid inline editing by writing into $filetmp
-    local cmd="a"
-    local text="$appendurl"
-    sed "$N $cmd $text" "$file" >  "$filetmp" \
-          && mv "$filetmp" "$file"
-    
-  fi
-  
-  # return status of the last statement executed
-  return 
-
-}
-# -----------------------------------------------------------------------------
-
-
 sed_in_files_md() {
 
   #============================================================================
@@ -877,51 +823,57 @@ sed_in_files_md() {
   #-----------------------------------------------------------------------------
   # SED
   # ===
-  # sed -options 'command' file
-  # sed -options 'command' < infile > outfile
-  # sed -options 'command1; command2' file
-  # options:
-  # -n do not print buffer/file
-  # -i apply/print to file
-  # -E or -r extended regular expression
-  # commands for search and print, delete, append, insert:
-  # N,M[!]p                         print OR [not] line(s)
-  # /pattern/[!]p                   print or [not] pattern(s)
-  # /pattern1/,/pattern2/[!]p       print or [not] between patterns
-  # N,M[!]d  OR  N,M!d              delete OR [not] line(s) 
-  # /pattern/[!]d                   delete OR [not] pattern(s)
-  # /pattern1/,/pattern2/[!]d       delete OR [not] between patterns
-  # N,M[!]a Text                    append Text OR [not] to lines(s) 
-  # /pattern/[!]a Text              append Text OR [not] to pattern
-  # /pattern1/,/pattern2/[!]a Text  append Text OR [not] between patterns
-  # N,M[!]i Text                    insert Text OR [not] to line(s) 
-  # /pattern/[!]i Text              insert Text OR [not] to pattern
-  # /pattern1/,/pattern2/[!]i Text  insert Text OR [not] between patterns
-  # /pattern/=                      print line numbers
-  # { ; }                           list of commands colon separated
-  # {p;q}                           print first (p) and quit (q)
-  # 
-  # command for search and replace on lines where pattern matches
-  # Index,/pattern/s/search/replace/sr_options
-  # Index
-  # 0              apply only to first match
-  # sr_options
-  # g              apply to all search instances
-  # n              apply only to nth search instance
-  # p              print only replaced lines
-  # w file         print to file
-  #
-  # apply only to first match
-  # -n '/RE/{p;q;}' file       # print only the first match
-  # '0,/RE/{//d;}' file        # delete only the first match
-  # '0,/RE/s//to_that/' file   # change only the first match
-  #
-  # regex goups
-  # search and replace only last occurence of search pattern in line
-  # \1: print content of first braces
-  # \2: print content of second braces
-  # sed -r 's/(.*)search/\1replace/'
-  # sed -r 's/(.*)search(.*)/\1replace\2/
+  # 1.) command line call:
+  #   sed -options 'command' file
+  #   sed -options 'command' < infile > outfile
+  #   sed -options 'command1; command2' file
+  # 2.) options:
+  #   -n do not print buffer/file
+  #   -i apply/print to file
+  #   -E or -r extended Regex also for GNU (-E for POSIX portability)
+  # 3.a) commands for search and print, delete, append, insert:
+  #   N,M[!]p  or Np                  print OR [not] line(s)
+  #   /pattern/[!]p                   print or [not] pattern(s)
+  #   /pattern1/,/pattern2/[!]p       print or [not] between patterns
+  #   N,M[!]d  or  Nd                 delete OR [not] line(s) 
+  #   /pattern/[!]d                   delete OR [not] pattern(s)
+  #   /pattern1/,/pattern2/[!]d       delete OR [not] between patterns
+  #   N,M[!]a Text  or Na Text        append Text OR [not] to lines(s) 
+  #   /pattern/[!]a Text              append Text OR [not] to pattern
+  #   /pattern1/,/pattern2/[!]a Text  append Text OR [not] between patterns
+  #   N,M[!]i Text  or Ni Text        insert Text OR [not] to line(s) 
+  #   /pattern/[!]i Text              insert Text OR [not] to pattern
+  #   /pattern1/,/pattern2/[!]i Text  insert Text OR [not] between patterns
+  #   /pattern/=                      print line numbers
+  # 3.b) command list
+  #   { ; }                           list of commands colon separated
+  #   {p;q}                           Example: print first (p) and quit (q)
+  #   {/pattern/{ ; }}                nested with pattern
+  # 3.b) command for search and replace on lines where pattern matches
+  #   Index,/pattern/s/search/replace/sr_options
+  #   Index
+  #   0              apply only to first match
+  #   sr_options
+  #   g              apply to all search instances
+  #   n              apply only to nth search instance
+  #   p              print only replaced lines
+  #   w file         print to file
+  # 4.a) Range before search pattern, then enclose pattern search in {}
+  #   N,M{/pattern/}
+  # 4.b) Examples: only search in range of line number 300 to end (\$) 
+  #   print (p) first and quit (q). Expressions in nested { { }}
+  #   Escape characters with special meaning like $.
+  #   300,\${/pattern/{p;q;}}
+  # 4.c) Examples: apply only to first match
+  #   -n '/RE/{p;q;}' file       # print only the first match
+  #   '0,/RE/{//d;}' file        # delete only the first match
+  #   '0,/RE/s//to_that/' file   # change only the first match
+  # 4.d) Examples: regex goups
+  #   search and replace only last occurence of search pattern in line
+  #   \1: print content of first braces
+  #   \2: print content of second braces
+  #   sed -r 's/(.*)search/\1replace/'
+  #   sed -r 's/(.*)search(.*)/\1replace\2/
   #
   # sort
   # ====
@@ -929,6 +881,25 @@ sed_in_files_md() {
   # -n string numerical value
   # -o write to file
   # -u unique
+  #
+  # GREP
+  # ====
+  # grep options "pattern" file(s)       # apply grep to file(s), directorie(s)
+  # echo string | grep options "pattern" #apply grep to string
+  # -E: extended Regex (GNU basic is already extended)
+  # -c: count instead of normal ouput
+  # -n: lines number of matches and line
+  # -o: only matching part of line
+  # -v: invert match
+  #
+  # CUT
+  # ===
+  # cut option 'value'
+  # -c character(s)
+  # -f field(s) or column(s)
+  # -d delimiter for characters
+  # -d$ delimiter for \n, \t
+  #
   # ---------------------------------------------------------------------------
   #doc_end---------------------------------------------------------------------
   [[ $DEBUG == 'y' ]] && echo "--$LINENO ${BASH_SOURCE[0]}:sed_in_files_md()"
@@ -1014,13 +985,13 @@ sed_in_files_md() {
           sed_append_url "$file" "$filetmp" "$appendurl"
           ;;
         a)
-          echo "a"
+          echo "a: not yet implemented"
           ;;
         i)
-          echo "i"
+          echo "i: not yet implemented"
           ;;
         s)
-          echo "s"
+          echo "s: not yet implemented"
           ;;
         *)
           echo "command not available"
@@ -1049,6 +1020,133 @@ sed_in_files_md() {
   # delete temporary file if it not exists (||) then  move on (true)
   /bin/rm -v -i $filetmp || true
 
+  # return status of the last statement executed
+  return 
+
+}
+# -----------------------------------------------------------------------------
+
+
+sed_append_url(){
+  
+  #============================================================================
+  #doc_begin-------------------------------------------------------------------
+  # ---------------------------------------------------------------------------
+  # sed_append_url(): For Task II: 
+  # Purpose: 
+  #   It appends a new Wiki URL reference to the list at the end of an 
+  #   input file.
+  #   For now, I use it for all my README.md and Home.md GitHub pages.  
+  # Arguments:
+  #   $1:   filename of the file to change:
+  #   $2:   a temporary file $filetmp used for SED to avoid the SED -i option
+  #   $3:   the new URL to append
+  # How it works:
+  #   It gets the URL of my new Wiki page and a filename of the page, to which
+  #   the URL should be appended. 
+  #   First it extracts the repository from the URL and and then fills this
+  #   information into a pattern. The pattern is used by SED to find all
+  #   matching lines. From those lines the last one is determined as the place
+  #   to append. Its reference number is extracted. With this information a 
+  #   new reference for the new URL is constructed which is then appended by a 
+  #   SED append command. 
+  #   For both extraction tasks GREP -o is applied to a string.
+  # How it is called:
+  #   It is called from function sed_in_files_md(), which is called inside 
+  #   main() function.
+  # ---------------------------------------------------------------------------
+  #doc_end---------------------------------------------------------------------
+  [[ $DEBUG == 'y' ]] && echo "--$LINENO ${BASH_SOURCE[0]}:sed_append_url()"
+  # ---------------------------------------------------------------------------
+  #============================================================================
+ 
+  # input arguments
+  local file="$1"
+  local filetmp="$2"
+  local appendurl="$3"
+
+  # define line number range to apply SED
+  # only in range with line numbers 314 to end (\$)
+  local sed_range="314,\$"
+
+  # PATTERN: repositories name pattern
+  local pattern_repositories="qool-.*-loop"
+
+  # GREP: extract qool-XXX-loop from string
+  # -o: only print matching part
+  local search_repository
+  search_repository=$(echo "$appendurl" | grep -E -o "$pattern_repositories" )
+  echo "search this repository: $search_repository"
+  
+  # PATTERN: to search for (hard coded with one variable)
+  local pattern_url
+  pattern_url="^\[.*github\.com\/qoolixiloop\/$search_repository\/wiki"
+  echo "pattern to search: $pattern_url"
+
+  # SED: print all matching lines into a variable
+  # -n do not print buffer, /p print
+  # only in range $sed_range
+  local sed_found_matches
+  sed_found_matches=$(sed -E -n "$sed_range{/$pattern_url/p}" "$file")
+  
+  # SED: print all line numbers of all matching lines into variable
+  # -n do not print buffer, /{=;} output only line numbers
+  # only in range $sed_range
+  local sed_found_matches_on_lines
+  sed_found_matches_on_lines=$(sed -E -n "$sed_range{/$pattern_url/{=;}}" \
+    "$file")
+  
+  # CONDITION: in case SED found matching lines  
+  if [[ -n "$sed_found_matches"  ]]; then 
+    
+    # ECHO: print info to the screen
+    echo "1.SED) found matches: ${sed_found_matches}"
+    echo "2.SED) found matches on lines: ${sed_found_matches_on_lines}"
+  
+    # TAIL: extract highest line number
+    # $sed_found_matches_on_lines is a space separated string
+    # -n: string(s) as numerical values
+    local N_max
+    N_max=$(echo "${sed_found_matches_on_lines}" | sort -n | tail -1)
+    echo "N_max: $N_max"
+
+    # SED: extract line with that line number
+    # -n do not print buffer, N,p print line
+    local L_max
+    L_max=$(sed -E -n "${N_max}p" "$file")
+    echo "L_max: $L_max"
+
+    #PATTERN: url reference and url reference number
+    local pattern_url_ref
+    local pattern_url_nr
+    pattern_url_ref='\[[0-9]{3,4}]:'
+    pattern_url_nr='[0-9]{3,4}'
+    
+    # GREP: extract the URL reference number of that line, using GREP -o
+    # beware: break line with backslash and no spaces before and after \
+    local ref_num_of_match
+    ref_num_of_match=$(echo "$L_max" | grep -E -o "$pattern_url_ref"\
+      | grep -E -o "$pattern_url_nr")
+    
+    # ARITHMETIC: construct the new reference [1234]: http://...
+    # beware: spaces are part of the syntax, and variables without $
+    local new_ref_num
+    new_ref_num=$(( ref_num_of_match + 1 ))
+    echo "$new_ref_num"
+    local new_ref
+    new_ref="[$new_ref_num]: $appendurl"
+
+    # SED: command $a $text to $file at line $N
+    # write to $filetmp and move that file to $file (overwrite)
+    # avoid inline editing by writing into $filetmp
+    local N="$new_ref_num"
+    local cmd="a"
+    local text="$new_ref"
+    sed "$N $cmd $text" "$file" >  "$filetmp" \
+          && mv "$filetmp" "$file"
+    
+  fi
+  
   # return status of the last statement executed
   return 
 
