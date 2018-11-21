@@ -436,35 +436,74 @@ ask_user() {
   [[ $DEBUG == 'y' ]] && echo "--$LINENO ${BASH_SOURCE[0]}:ask_user()" 
   # ---------------------------------------------------------------------------
   #============================================================================
-   
-  # print name of the line number and the next code block
+
+  # assign input output variable to local variable
+  local __in_out="$3"
+
+  # print line number and name of the next code block
   echo; echo "$2" "$1" 
-  
+
   # print instructions
-  echo "continue (c), skip (s), return (r)?"
-  
+  echo " apply (a), skip loop (c), skip function (b), terminate script (t)?"
+
   # wait for, read and store user input into
   local ANSWER
-  
+
   # check users answer and act as explained in the function discription
-  # endless loop until c, s, or r are entered
+  # endless loop until a, b, c, or t are entered
   while true; do
     read -r ANSWER
     case "$ANSWER" in
-      c) echo "continue"
-        return 0
+      a) echo "a"
+        #return C Style with eval
+        if [[ "$__in_out" ]]; then
+          #shellcheck disable=2086
+          eval $__in_out='a'
+        else
+          echo "you forgot to pass in an output argument"
+          return 1
+        fi
+        return
         ;;
-      s) echo "skip (not implemented, same as return"
-        return 1
+      c) echo "c"
+        #return C Style with eval
+        if [[ "$__in_out" ]]; then
+          #shellcheck disable=2086
+          eval $__in_out='c'
+        else
+          echo "you forgot to pass in an output argument"
+          return 1
+        fi
+        return
         ;;
-      r) echo "returns"
-        return 1
+      b) echo "b"
+        #return C Style with eval
+        if [[ "$__in_out" ]]; then
+          #shellcheck disable=2086
+          eval $__in_out='b'
+        else
+          echo "you forgot to pass in an output argument"
+          return 1
+        fi
+        return
         ;;
-      *) echo "type c: continue, s: skip, r: return" 
+      t) echo "t"
+        #return C Style with eval
+        if [[ "$__in_out" ]]; then
+          #shellcheck disable=2086
+          eval $__in_out='t'
+        else
+          echo "you forgot to pass in an output argument"
+          return 1
+        fi
+        return
+        ;;
+      *) echo \
+        "apply (a), skip loop (c), skip function (b), terminate script (t)?"
         ;;
     esac
   done
-  
+
   # this line should never be reached
   # return 1 to indicate that the script shall terminate
   return 1
@@ -578,7 +617,7 @@ script_sourced_or_executed() {
 #           load_file_vars():         generate filesystem related global vars
 #           check_filelist():         check the file list
 #           check_dirlist():          check the directory list
-#           sed_files_md():           make substituion
+#           sed_s_in_files_md():      make substituion
 #           git_status_dirlist():     apply git status to directory list
 #           git_add_dirlist():        apply git add . to directory list
 #           git_commit_dirlist():     apply git commit to directory list
@@ -629,16 +668,19 @@ load_file_vars() {
     relativepath_no_scriptname: $relativepath_no_scriptname"
 
   fullpath_no_scriptname=${fullpath_with_scriptname%/*}
-  echo "--$LINENO  \
+  echo "--$LINENO \
     fullpath_no_scriptname: $fullpath_no_scriptname"
 
   # cd into the script directory (to be sure)
   cd "$fullpath_no_scriptname" || return
-  echo "--$LINENO pwd: $(pwd)"
+  echo "--$LINENO \
+    pwd: $(pwd)"
   scriptname=$(basename "${BASH_SOURCE[0]}")
   scriptname_=${fullpath_with_scriptname##*/}
-  echo "--$LINENO scriptname: $scriptname"
-  echo "--$LINENO scriptname: $scriptname_"
+  echo "--$LINENO \
+    scriptname: $scriptname"
+  echo "--$LINENO \
+    scriptname: $scriptname_"
 
   parent_directory=${fullpath_no_scriptname##*/}
   echo "--$LINENO \
@@ -673,7 +715,7 @@ check_filelist(){
   #doc_end---------------------------------------------------------------------
   [[ $DEBUG == 'y' ]] && echo "--$LINENO ${BASH_SOURCE[0]}:check_filelist()" 
   # ---------------------------------------------------------------------------
-  #===== =======================================================================
+  #============================================================================
 
   # create a file list with all Home.md files
   local filelist="$1"
@@ -747,12 +789,12 @@ check_dirlist() {
 # -----------------------------------------------------------------------------
 
 
-sed_files_md() {
- 
+sed_s_in_files_md() {
+
   #============================================================================
   #doc_begin-------------------------------------------------------------------
   # ---------------------------------------------------------------------------
-  # sed_files_md(): For Task II and Task III
+  # sed_s_in_files_md(): For Task II and Task III
   # Purpose:
   #   1.) make a backup of all files you pass to the function
   #   2.) make substitutions on all files you pass to the function
@@ -767,7 +809,7 @@ sed_files_md() {
   #   $4: backup directory for all your files
   # ---------------------------------------------------------------------------
   #doc_end---------------------------------------------------------------------
-  [[ $DEBUG == 'y' ]] && echo "--$LINENO ${BASH_SOURCE[0]}:sed_files_md()"
+  [[ $DEBUG == 'y' ]] && echo "--$LINENO ${BASH_SOURCE[0]}:sed_s_in_files_md()"
   # ---------------------------------------------------------------------------
   #============================================================================
 
@@ -799,11 +841,29 @@ sed_files_md() {
     # do not use depreciated "-a" for and use (&&)
     if [ -f "$file" ] && [ -r "$file" ]; then
 
+      # user interaction: 
+      # if the function returns 1, do exit function with return 1
+      # if user answer a, c, b, t act accordingly
+      # answer is passed as a reference not a value! $answer won't work out
+      local answer="the answer will be stored here"
+      echo "--------------------------------------------------------------"
+      echo "next file to apply sed_s: $file"
+      if ! ask_user 'next_sed_s' "$LINENO" answer; then
+        echo "exit: $LINENO"; return 1; 
+      fi
+      if [[ "$answer" == "a" ]]; then echo "apply to this file"
+      elif [[ "$answer" == "c" ]]; then echo "cont. with next file"; continue
+      elif [[ "$answer" == "b" ]]; then echo "break this loop"; break
+      elif [[ "$answer" == "t" ]]; then echo "terminate script"; return 1
+      else echo "$LINENO : something went wrong"
+      fi
+      echo "--------------------------------------------------------------"
+
       # make a new name with $file: it is a relative path incl. file name. 
       # cut the string three times to get "formerParentFolder_fileName"
       local newfilename_intermediate_step="${file%/*}_${file##*/}"
       local newfilename=${newfilename_intermediate_step##*/}
-      
+
       # make a backup copy of $file into $dirbak before anything else.
       # $file is a relative path with filename.
       # the $newfilename string we have just created.
@@ -829,13 +889,8 @@ sed_files_md() {
       diff "$file" "$dirbak/$newfilename"
       echo "--------------------------------------------------------------"
 
-      # user interaction: if function returns 1, exit function with return 1
-      echo "--------------------------------------------------------------"
-      if ! ask_user 'next_sed' "$LINENO"; then
-        echo "exit: $LINENO"; return 1; fi
-      echo "--------------------------------------------------------------"
 
-    # else if $file is not a file or not readable
+      # else if $file is not a file or not readable
     else
       echo "Error: cannot read $file"
     fi
@@ -847,7 +902,7 @@ sed_files_md() {
 
   # return status of the last statement executed
   return 
- 
+
 }
 # -----------------------------------------------------------------------------
 
@@ -869,7 +924,7 @@ git_status_dirlist() {
   [[ $DEBUG == 'y' ]] && echo "--$LINENO ${BASH_SOURCE[0]}:git_status_dirlst()"
   # ---------------------------------------------------------------------------
   #============================================================================
- 
+
   # input arguments
   local dirlist="$1"
   local pwd_script="$2"
@@ -880,6 +935,24 @@ git_status_dirlist() {
     # if $directory exists (-e) go on
     # otherwise continue with next directory in $dirlist
     [ -e "$directory" ] || continue
+
+    # user interaction: 
+    # if the function returns 1, do exit function with return 1
+    # if user answer a, c, b, t act accordingly
+    # answer is passed as a reference not a value! $answer won't work out
+    local answer="the answer will be stored here"
+    echo "--------------------------------------------------------------"
+    echo "next repository to apply git status: $directory"
+    if ! ask_user 'next_git_status' "$LINENO" answer; then
+      echo "exit: $LINENO"; return 1; 
+    fi
+    if [[ "$answer" == "a" ]]; then echo "apply to this file"
+    elif [[ "$answer" == "c" ]]; then echo "cont. with next file"; continue
+    elif [[ "$answer" == "b" ]]; then echo "break this loop"; break
+    elif [[ "$answer" == "t" ]]; then echo "terminate script"; return 1
+    else echo "$LINENO : something went wrong"
+    fi
+    echo "--------------------------------------------------------------"
 
     # move to local repository, or if it fails
     # return 1 to indicate that the script shall terminate
@@ -895,14 +968,8 @@ git_status_dirlist() {
     # return 1 to indicate that the script shall terminate
     cd "$pwd_script"  || return 1
 
-    # user interaction: if function returns 1, exit function with return 1
-    echo "--------------------------------------------------------------"
-    if ! ask_user 'next git_status' "$LINENO"; then
-        echo; echo "exit: $LINENO"; return 1; fi
-    echo "--------------------------------------------------------------"
-
   done
-  
+
   # return status of the last statement executed
   return
 
@@ -927,7 +994,7 @@ git_add_dirlist() {
   [[ $DEBUG == 'y' ]] && echo "--$LINENO ${BASH_SOURCE[0]}:load_file_vars()" 
   # ---------------------------------------------------------------------------
   #============================================================================
- 
+
   # input arguments
   local dirlist="$1"
   local pwd_script="$2"
@@ -938,6 +1005,24 @@ git_add_dirlist() {
     # if $directory exists (-e) go on
     # otherwise continue with next directory in $dirlist
     [ -e "$directory" ] || continue
+
+    # user interaction: 
+    # if the function returns 1, do exit function with return 1
+    # if user answer a, c, b, t act accordingly
+    # answer is passed as a reference not a value! $answer won't work out
+    local answer="the answer will be stored here"
+    echo "--------------------------------------------------------------"
+    echo "next repository to apply git add: $directory"
+    if ! ask_user 'next_git_add' "$LINENO" answer; then
+      echo "exit: $LINENO"; return 1; 
+    fi
+    if [[ "$answer" == "a" ]]; then echo "apply to this file"
+    elif [[ "$answer" == "c" ]]; then echo "cont. with next file"; continue
+    elif [[ "$answer" == "b" ]]; then echo "break this loop"; break
+    elif [[ "$answer" == "t" ]]; then echo "terminate script"; return 1
+    else echo "$LINENO : something went wrong"
+    fi
+    echo "--------------------------------------------------------------"
 
     # move to local repository, or if it fails
     # return 1 to indicate that the script shall terminate
@@ -953,17 +1038,11 @@ git_add_dirlist() {
     # return 1 to indicate that the script shall terminate
     cd "$pwd_script"  || return 1
 
-    # user interaction: if function returns 1, exit function with return 1
-    echo "--------------------------------------------------------------"
-    if ! ask_user 'next git_add .' "$LINENO"; then
-        echo "exit: $LINENO"; return 1; fi
-    echo "--------------------------------------------------------------"
-
   done
-  
+
   # return status of the last statement executed
   return
-  
+
 }
 # -----------------------------------------------------------------------------
 
@@ -999,6 +1078,24 @@ git_commit_dirlist(){
     # otherwise continue with next directory in $dirlist
     [ -e "$directory" ] || continue
 
+    # user interaction: 
+    # if the function returns 1, do exit function with return 1
+    # if user answer a, c, b, t act accordingly
+    # answer is passed as a reference not a value! $answer won't work out
+    local answer="the answer will be stored here"
+    echo "--------------------------------------------------------------"
+    echo "next repository to apply git commit: $directory"
+    if ! ask_user 'next_git_commit' "$LINENO" answer; then
+      echo "exit: $LINENO"; return 1; 
+    fi
+    if [[ "$answer" == "a" ]]; then echo "apply to this file"
+    elif [[ "$answer" == "c" ]]; then echo "cont. with next file"; continue
+    elif [[ "$answer" == "b" ]]; then echo "break this loop"; break
+    elif [[ "$answer" == "t" ]]; then echo "terminate script"; return 1
+    else echo "$LINENO : something went wrong"
+    fi
+    echo "--------------------------------------------------------------"
+
     # move to local repository, or if it fails
     # return 1 to indicate that the script shall terminate
     cd "$directory"  || return 1
@@ -1012,12 +1109,6 @@ git_commit_dirlist(){
     # move to local script path, or if it fails
     # return 1 to indicate that the script shall terminate
     cd "$pwd_script"  || return 1
-
-    # user interaction: if function returns 1, exit function with return 1
-    echo "--------------------------------------------------------------"
-    if ! ask_user 'next git_commit' "$LINENO"; then
-        echo "exit: $LINENO"; return 1; fi
-    echo "--------------------------------------------------------------"
 
   done
   
@@ -1057,6 +1148,24 @@ git_push_dirlist(){
     # otherwise continue with next directory in $dirlist
     [ -e "$directory" ] || continue
 
+    # user interaction: 
+    # if the function returns 1, do exit function with return 1
+    # if user answer a, c, b, t act accordingly
+    # answer is passed as a reference not a value! $answer won't work out
+    local answer="the answer will be stored here"
+    echo "--------------------------------------------------------------"
+    echo "next repository to apply git commit: $directory"
+    if ! ask_user 'next_git_push' "$LINENO" answer; then
+      echo "exit: $LINENO"; return 1; 
+    fi
+    if [[ "$answer" == "a" ]]; then echo "apply to this file"
+    elif [[ "$answer" == "c" ]]; then echo "cont. with next file"; continue
+    elif [[ "$answer" == "b" ]]; then echo "break this loop"; break
+    elif [[ "$answer" == "t" ]]; then echo "terminate script"; return 1
+    else echo "$LINENO : something went wrong"
+    fi
+    echo "--------------------------------------------------------------"
+
     # move to local repository, or if it fails
     # return 1 to indicate that the script shall terminate
     cd "$directory"  || return 1
@@ -1070,12 +1179,6 @@ git_push_dirlist(){
     # move to local script path, or if it fails
     # return 1 to indicate that the script shall terminate
     cd "$pwd_script"  || return 1
-
-    # user interaction: if function returns 1, exit function with return 1
-    echo "--------------------------------------------------------------"
-    if ! ask_user 'next git_push' "$LINENO"; then
-        echo "exit: $LINENO"; return 1; fi
-    echo "--------------------------------------------------------------"
 
   done
   
@@ -1123,7 +1226,7 @@ git_all_steps_dirlist() {
   local dirlist="$1"
   local pwd_script="$2"
   local message="$3"
-echo "????$message"
+  echo "$message"
   # loop through directory list
   for directory in $dirlist; do
 
@@ -1143,38 +1246,94 @@ echo "????$message"
     echo "--------------------------------------------------------------"
     echo "$directory"
     echo "--------------------------------------------------------------"
+    
+    # user interaction: 
+    # if the function returns 1, do exit function with return 1
+    # if user answer a, c, b, t act accordingly
+    # answer is passed as a reference not a value! $answer won't work out
+    local answer="the answer will be stored here"
+    echo "--------------------------------------------------------------"
+    echo "apply git status to repository: $directory"
+    if ! ask_user 'git_status' "$LINENO" answer; then
+      echo "exit: $LINENO"; return 1; 
+    fi
+    if [[ "$answer" == "a" ]]; then echo "apply to this file"
+    elif [[ "$answer" == "c" ]]; then echo "cont. with next file"; continue
+    elif [[ "$answer" == "b" ]]; then echo "break this loop"; break
+    elif [[ "$answer" == "t" ]]; then echo "terminate script"; return 1
+    else echo "$LINENO : something went wrong"
+    fi
+    echo "--------------------------------------------------------------"
+    
+    # show git status
     /usr/bin/git status
     
-    # user interaction: if function returns 1, exit function with return 1
+    # user interaction: 
+    # if the function returns 1, do exit function with return 1
+    # if user answer a, c, b, t act accordingly
+    # answer is passed as a reference not a value! $answer won't work out
+    local answer="the answer will be stored here"
     echo "--------------------------------------------------------------"
-    if ! ask_user 'git_add .' "$LINENO"; then
-        echo "exit: $LINENO"; return 1; fi
+    echo "apply git add . to repository: $directory"
+    if ! ask_user 'git_add_.' "$LINENO" answer; then
+      echo "exit: $LINENO"; return 1; 
+    fi
+    if [[ "$answer" == "a" ]]; then echo "apply to this file"
+    elif [[ "$answer" == "c" ]]; then echo "cont. with next file"; continue
+    elif [[ "$answer" == "b" ]]; then echo "break this loop"; break
+    elif [[ "$answer" == "t" ]]; then echo "terminate script"; return 1
+    else echo "$LINENO : something went wrong"
+    fi
     echo "--------------------------------------------------------------"
+    
+    # apply git add .
     /usr/bin/git add .
     
-    # user interaction: if function returns 1, exit function with return 1
+    # user interaction: 
+    # if the function returns 1, do exit function with return 1
+    # if user answer a, c, b, t act accordingly
+    # answer is passed as a reference not a value! $answer won't work out
+    local answer="the answer will be stored here"
     echo "--------------------------------------------------------------"
-    if ! ask_user 'git_commit' "$LINENO"; then
-        echo "exit: $LINENO"; return 1; fi
+    echo "apply git commit to repository: $directory"
+    if ! ask_user 'git_commit' "$LINENO" answer; then
+      echo "exit: $LINENO"; return 1; 
+    fi
+    if [[ "$answer" == "a" ]]; then echo "apply to this file"
+    elif [[ "$answer" == "c" ]]; then echo "cont. with next file"; continue
+    elif [[ "$answer" == "b" ]]; then echo "break this loop"; break
+    elif [[ "$answer" == "t" ]]; then echo "terminate script"; return 1
+    else echo "$LINENO : something went wrong"
+    fi
     echo "--------------------------------------------------------------"
+    
+    # apply git commit
     /usr/bin/git commit -m "$message"
     
-    # user interaction: if function returns 1, exit function with return 1
+    # user interaction: 
+    # if the function returns 1, do exit function with return 1
+    # if user answer a, c, b, t act accordingly
+    # answer is passed as a reference not a value! $answer won't work out
+    local answer="the answer will be stored here"
     echo "--------------------------------------------------------------"
-    if ! ask_user 'next git_push' "$LINENO"; then
-        echo "exit: $LINENO"; return 1; fi
+    echo "apply git push to repository: $directory"
+    if ! ask_user 'git_push' "$LINENO" answer; then
+      echo "exit: $LINENO"; return 1; 
+    fi
+    if [[ "$answer" == "a" ]]; then echo "apply to this file"
+    elif [[ "$answer" == "c" ]]; then echo "cont. with next file"; continue
+    elif [[ "$answer" == "b" ]]; then echo "break this loop"; break
+    elif [[ "$answer" == "t" ]]; then echo "terminate script"; return 1
+    else echo "$LINENO : something went wrong"
+    fi
     echo "--------------------------------------------------------------"
+    
+    # apply git push
     /usr/bin/git push
 
     # move to local script path, or if it fails
     # return 1 to indicate that the script shall terminate
     cd "$pwd_script"  || return 1
-
-    # user interaction: if function returns 1, exit function with return 1
-    echo "--------------------------------------------------------------"
-    if ! ask_user 'next git all steps' "$LINENO"; then
-        echo "exit: $LINENO"; return 1; fi
-    echo "--------------------------------------------------------------"
 
   done
   
@@ -1256,12 +1415,25 @@ function main() {
     Task_1_checkpath|t1_checkpath|1_checkpath)
       # Code 
       if ! load_file_vars "qoolixiloopAgithub"; then
-        echo "exit: $LINENO"; exit 1; fi
+        echo "exit: $LINENO"; exit 1 
+      fi
 
-      # user interaction: if function returns 1, exit script
+      # user interaction: 
+      # if the function returns 1, do exit function with return 1
+      # if user answer a, c, b, t act accordingly
+      # answer is passed as a reference not a value! $answer won't work out
+      local answer="the answer will be stored here"
       echo "--------------------------------------------------------------"
-      if ! ask_user 'Task II.1' "$LINENO"; then
-        echo "exit: $LINENO"; exit 1; fi
+      echo "would you like to move on to Task_2_home_md?"
+      if ! ask_user 'Task_2_home_md' "$LINENO" answer; then
+        echo "exit: $LINENO"; exit 1 
+      fi
+      if [[ "$answer" == "a" ]]; then echo "OK, go to task"
+      elif [[ "$answer" == "c" ]]; then echo "no loop, go to task"
+      elif [[ "$answer" == "b" ]]; then echo "no loop, go to task"
+      elif [[ "$answer" == "t" ]]; then echo "terminate script"; exit 1
+      else echo "$LINENO : something went wrong"
+      fi
       echo "--------------------------------------------------------------"
 
       # and leave (;;) or  move on (;&) 
@@ -1278,12 +1450,25 @@ function main() {
       # a.) list of all Home.md files to which you will apply your script
       local filelist_home_md="./*-loop.wiki/Home.md"
       if ! check_filelist "$filelist_home_md"; then
-        echo "exit: $LINENO"; exit 1; fi
+        echo "exit: $LINENO"; exit 1
+      fi
 
-      # user interaction: if function returns 1, exit script
+      # user interaction: 
+      # if the function returns 1, do exit function with return 1
+      # if user answer a, c, b, t act accordingly
+      # answer is passed as a reference not a value! $answer won't work out
+      local answer="the answer will be stored here"
       echo "--------------------------------------------------------------"
-      if ! ask_user 'Task II.2' "$LINENO"; then
-        echo "exit: $LINENO"; exit 1; fi
+      echo "would you like to search for $SEARCH and replace with $REPLACE?"
+      if ! ask_user 'Task_2_home_md' "$LINENO" answer; then
+        echo "exit: $LINENO"; exit 1 
+      fi
+      if [[ "$answer" == "a" ]]; then echo "OK, go to task"
+      elif [[ "$answer" == "c" ]]; then echo "no loop, go to task"
+      elif [[ "$answer" == "b" ]]; then echo "no loop, go to task"
+      elif [[ "$answer" == "t" ]]; then echo "terminate script"; exit 1
+      else echo "$LINENO : something went wrong"
+      fi
       echo "--------------------------------------------------------------"
 
       # b.) give in the two variables TODO:
@@ -1294,14 +1479,27 @@ function main() {
       #     for each file change the diff will be printed
       #     after every diff there is a user interaction
       local dirbak_Home_md=./bak_Home_md/
-      if ! sed_files_md "$searchpattern" "$replacement" \
+      if ! sed_s_in_files_md "$searchpattern" "$replacement" \
         "$filelist_home_md" "$dirbak_Home_md"; then
-        echo "exit: $LINENO"; exit 1; fi
+        echo "exit: $LINENO"; exit 1
+      fi
 
-      # user interaction: if function returns 1, exit script
+      # user interaction: 
+      # if the function returns 1, do exit function with return 1
+      # if user answer a, c, b, t act accordingly
+      # answer is passed as a reference not a value! $answer won't work out
+      local answer="the answer will be stored here"
       echo "--------------------------------------------------------------"
-      if ! ask_user 'Task III.1' "$LINENO"; then
-        echo "exit: $LINENO"; exit 1; fi
+      echo "would you like to move on to Task_2_readme_md?"
+      if ! ask_user 'Task_2_readme_md' "$LINENO" answer; then
+        echo "exit: $LINENO"; exit 1 
+      fi
+      if [[ "$answer" == "a" ]]; then echo "OK, go to task"
+      elif [[ "$answer" == "c" ]]; then echo "no loop, go to task"
+      elif [[ "$answer" == "b" ]]; then echo "no loop, go to task"
+      elif [[ "$answer" == "t" ]]; then echo "terminate script"; exit 1
+      else echo "$LINENO : something went wrong"
+      fi
       echo "--------------------------------------------------------------"
 
       # and l eave (;;)  or  move on (;&)
@@ -1318,12 +1516,25 @@ function main() {
       # a.) list of all README.md files to which you will apply your script
       local filelist_README_md="./*-loop/README.md"
       if ! check_filelist "$filelist_README_md"; then
-        echo "exit: $LINENO"; exit 1; fi
+        echo "exit: $LINENO"; exit 1 
+      fi
 
-      # user interaction: if function returns 1, exit script
+      # user interaction: 
+      # if the function returns 1, do exit function with return 1
+      # if user answer a, c, b, t act accordingly
+      # answer is passed as a reference not a value! $answer won't work out
+      local answer="the answer will be stored here"
       echo "--------------------------------------------------------------"
-      if ! ask_user 'Task III.2' "$LINENO"; then
-        echo "exit: $LINENO"; exit 1; fi
+      echo "would you like to search for $SEARCH and replace with $REPLACE?"
+      if ! ask_user 'Task_2_readme_md' "$LINENO" answer; then
+        echo "exit: $LINENO"; exit 1
+      fi
+      if [[ "$answer" == "a" ]]; then echo "OK, go to task"
+      elif [[ "$answer" == "c" ]]; then echo "no loop, go to task"
+      elif [[ "$answer" == "b" ]]; then echo "no loop, go to task"
+      elif [[ "$answer" == "t" ]]; then echo "terminate script"; exit 1
+      else echo "$LINENO : something went wrong"
+      fi
       echo "--------------------------------------------------------------"
 
       # b.) give in the two variables TODO:
@@ -1334,14 +1545,27 @@ function main() {
       #     for each file change the diff will be printed
       #     after every diff there is a user interaction
       local dirbak_README_md=./bak_README_md/
-      if ! sed_files_md "$searchpattern" "$replacement" \
+      if ! sed_s_in_files_md "$searchpattern" "$replacement" \
         "$filelist_README_md" "$dirbak_README_md"; then
-        echo "exit: $LINENO"; exit 1; fi
+        echo "exit: $LINENO"; exit 1 
+      fi
 
-      # user interaction: if function returns 1, exit script
+      # user interaction: 
+      # if the function returns 1, do exit function with return 1
+      # if user answer a, c, b, t act accordingly
+      # answer is passed as a reference not a value! $answer won't work out
+      local answer="the answer will be stored here"
       echo "--------------------------------------------------------------"
-      if ! ask_user 'Task IV.1' "$LINENO"; then
-        echo "exit: $LINENO"; exit 1; fi
+      echo "would you like to move on to Task_3_git_repos?"
+      if ! ask_user 'Task_3_git_repos' "$LINENO" answer; then
+        echo "exit: $LINENO"; exit 1
+      fi
+      if [[ "$answer" == "a" ]]; then echo "OK, go to task"
+      elif [[ "$answer" == "c" ]]; then echo "no loop, go to task"
+      elif [[ "$answer" == "b" ]]; then echo "no loop, go to task"
+      elif [[ "$answer" == "t" ]]; then echo "terminate script"; exit 1
+      else echo "$LINENO : something went wrong"
+      fi
       echo "--------------------------------------------------------------"
 
       # and  leave (;;)  or  move on (;&)
@@ -1362,12 +1586,25 @@ function main() {
       
       # check directory list
       if ! check_dirlist "$directorylist" "$pwd_script"; then
-        echo "exit: $LINENO"; exit 1; fi
+        echo "exit: $LINENO"; exit 1 
+      fi
 
-      # user interaction: if function returns 1, exit script
+      # user interaction: 
+      # if the function returns 1, do exit function with return 1
+      # if user answer a, c, b, t act accordingly
+      # answer is passed as a reference not a value! $answer won't work out
+      local answer="the answer will be stored here"
       echo "--------------------------------------------------------------"
-      if ! ask_user 'Task IV.2 git status' "$LINENO"; then
-        echo "exit: $LINENO"; exit 1; fi
+      echo "would you like to move on to Task_3_git_status?"
+      if ! ask_user 'Task_3_git_status' "$LINENO" answer; then
+        echo "exit: $LINENO"; exit 1 
+      fi
+      if [[ "$answer" == "a" ]]; then echo "OK, go to task"
+      elif [[ "$answer" == "c" ]]; then echo "no loop, go to task"
+      elif [[ "$answer" == "b" ]]; then echo "no loop, go to task"
+      elif [[ "$answer" == "t" ]]; then echo "terminate script"; exit 1
+      else echo "$LINENO : something went wrong"
+      fi
       echo "--------------------------------------------------------------"
       
       # and leave (;;)  or  move on (;&) 
@@ -1389,12 +1626,25 @@ function main() {
       
       # check status
       if ! git_status_dirlist "$directorylist" "$pwd_script"; then
-        echo "exit: $LINENO"; exit 1; fi
+        echo "exit: $LINENO"; exit 1 
+      fi
 
-      # user interaction: if function returns 1, exit script
+      # user interaction: 
+      # if the function returns 1, do exit function with return 1
+      # if user answer a, c, b, t act accordingly
+      # answer is passed as a reference not a value! $answer won't work out
+      local answer="the answer will be stored here"
       echo "--------------------------------------------------------------"
-      if ! ask_user 'Task IV.3 git add' "$LINENO"; then
-        echo "exit: $LINENO"; exit 1; fi
+      echo "would you like to move on to Task_3_git_add?"
+      if ! ask_user 'Task_3_git_add' "$LINENO" answer; then
+        echo "exit: $LINENO"; exit 1; 
+      fi
+      if [[ "$answer" == "a" ]]; then echo "OK, go to task"
+      elif [[ "$answer" == "c" ]]; then echo "no loop, go to task"
+      elif [[ "$answer" == "b" ]]; then echo "no loop, go to task"
+      elif [[ "$answer" == "t" ]]; then echo "terminate script"; exit 1
+      else echo "$LINENO : something went wrong"
+      fi
       echo "--------------------------------------------------------------"
 
       # and  leave (;;)  or  move on (;&)
@@ -1416,12 +1666,25 @@ function main() {
       
       # add
       if ! git_add_dirlist "$directorylist" "$pwd_script"; then
-        echo "exit: $LINENO"; exit 1; fi
+        echo "exit: $LINENO"; exit 1 
+      fi
 
-      # user interaction: if function returns 1, exit script
+      # user interaction: 
+      # if the function returns 1, do exit function with return 1
+      # if user answer a, c, b, t act accordingly
+      # answer is passed as a reference not a value! $answer won't work out
+      local answer="the answer will be stored here"
       echo "--------------------------------------------------------------"
-      if ! ask_user 'Task IV.5 git commit' "$LINENO"; then
-        echo "exit: $LINENO"; exit 1; fi
+      echo "would you like to move on to Task_3_git_commit?"
+      if ! ask_user 'Task_3_git_commit' "$LINENO" answer; then
+        echo "exit: $LINENO"; exit 1; 
+      fi
+      if [[ "$answer" == "a" ]]; then echo "OK, go to task"
+      elif [[ "$answer" == "c" ]]; then echo "no loop, go to task"
+      elif [[ "$answer" == "b" ]]; then echo "no loop, go to task"
+      elif [[ "$answer" == "t" ]]; then echo "terminate script"; exit 1
+      else echo "$LINENO : something went wrong"
+      fi
       echo "--------------------------------------------------------------"
 
       # and leave (;;)  or  move on (;&)
@@ -1446,12 +1709,25 @@ function main() {
       timestamp="$(date)"
       if ! git_commit_dirlist "$directorylist" "$pwd_script" \
         "batch run at $timestamp"; then
-        echo "exit: $LINENO"; exit 1; fi
+        echo "exit: $LINENO"; exit 1 
+      fi
 
-      # user interaction: if function returns 1, exit script
+      # user interaction: 
+      # if the function returns 1, do exit function with return 1
+      # if user answer a, c, b, t act accordingly
+      # answer is passed as a reference not a value! $answer won't work out
+      local answer="the answer will be stored here"
       echo "--------------------------------------------------------------"
-      if ! ask_user "$directorylist" "$LINENO"; then
-        echo "exit: $LINENO"; exit 1; fi
+      echo "would you like to move on to Task_3_git_status?"
+      if ! ask_user 'Task_3_git_status' "$LINENO" answer; then
+        echo "exit: $LINENO"; exit 1; 
+      fi
+      if [[ "$answer" == "a" ]]; then echo "OK, go to task"
+      elif [[ "$answer" == "c" ]]; then echo "no loop, go to task"
+      elif [[ "$answer" == "b" ]]; then echo "no loop, go to task"
+      elif [[ "$answer" == "t" ]]; then echo "terminate script"; exit 1
+      else echo "$LINENO : something went wrong"
+      fi
       echo "--------------------------------------------------------------"
 
       # a nd  leave (;;)  or  move on (;&)
