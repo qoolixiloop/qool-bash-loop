@@ -358,6 +358,16 @@ get_options() { # this function is called from main()
       ;;
 
       # This is an arg value type option.
+      # Will catch -c value or --cmd value
+      -c|--cmd)
+
+      # Set global variable TASK_2_COMMAND by shifting first
+      shift # past the key and to the value
+      TASK_2_COMMAND="$1"; echo "$TASK_2_COMMAND"
+
+      ;;
+
+      # This is an arg value type option.
       # Will catch -o value or --output-file value
       -o|--output-file)
 
@@ -617,7 +627,7 @@ script_sourced_or_executed() {
 #           load_file_vars():         generate filesystem related global vars
 #           check_filelist():         check the file list
 #           check_dirlist():          check the directory list
-#           sed_s_in_files_md():      make substituion
+#           sed_in_files_md():      make substituion
 #           git_status_dirlist():     apply git status to directory list
 #           git_add_dirlist():        apply git add . to directory list
 #           git_commit_dirlist():     apply git commit to directory list
@@ -789,37 +799,151 @@ check_dirlist() {
 # -----------------------------------------------------------------------------
 
 
-sed_s_in_files_md() {
+sed_append_url(){
+  
+  # input arguments
+  local file="$1"
+  local filetmp="$2"
+  local appendurl="$3"
+
+  # grep extract qool-XXX-loop from string
+  # -o: only print matching part
+  local pattern_repositories="qool-.*-loop"
+  local search_repository
+  search_repository=$(echo "$appendurl" | grep -o "$pattern_repositories" )
+  echo "search this repository: $search_repository"
+  
+  # pattern to search for (hard coded)
+  local pattern
+  pattern="^\[.*github\.com\/qoolixiloop\/$search_repository\/wiki.*wiki page"
+  echo "pattern to search: $pattern"
+
+  # print to variable: all matched lines
+  local sed_found_matches
+  sed_found_matches=$(sed -n "/$pattern/p" "$file")
+  
+  # print to variable: line numbers of all matched lines
+  local sed_found_matches_on_lines
+  sed_found_matches_on_lines=$(sed -n "/$pattern/{=;}" "$file")
+    
+  if [[ -n "$sed_found_matches"  ]]; then 
+    
+    echo "1.SED) found matches: ${sed_found_matches}"
+    echo "2.SED) found matches on lines: ${sed_found_matches_on_lines}"
+  
+    # extract highest line number
+    # $sed_found_matches_on_lines is a space separated string
+    # -n: string(s) as numerical values
+    local N
+    N=$(echo "${sed_found_matches_on_lines}" | sort -n | tail -1)
+    
+    # apply sed: command $a $text to $file at line $N
+    # avoid inline editing by writing into $filetmp
+    local cmd="a"
+    local text="$appendurl"
+    sed "$N $cmd $text" "$file" >  "$filetmp" \
+          && mv "$filetmp" "$file"
+    
+  fi
+  
+  # return status of the last statement executed
+  return 
+
+}
+# -----------------------------------------------------------------------------
+
+
+sed_in_files_md() {
 
   #============================================================================
   #doc_begin-------------------------------------------------------------------
   # ---------------------------------------------------------------------------
-  # sed_s_in_files_md(): For Task II and Task III
+  # sed_in_files_md(): For Task II and Task III
   # Purpose:
-  #   1.) make a backup of all files you pass to the function
-  #   2.) make substitutions on all files you pass to the function
-  #       |  it uses sed and uses the input arguments as follows:
-  #       |    sed "s/$1/$2/g $3
-  #       |  and reassigns them as follows:
-  #       |    sed "s/searchpattern/replacement/g" "$filelist"
+  #   1.)  make a backup of all files you pass to the function
+  #   2.a) make substitutions on all files you pass to the function
+  #        |  it uses sed and uses the input arguments as follows:
+  #        |    sed "s/$1/$2/g $3
+  #        |  and reassigns them as follows:
+  #        |    sed "s/searchpattern/replacement/g" "$filelist"
+  #   2.b) append new GitHub Wiki page URL to all Home.md and README.md
   # Arguments:
-  #   $1: sed searchpattern
-  #   $2: sed replacement
-  #   $3: sed file list with all the files to apply your substitutions
-  #   $4: backup directory for all your files
+  #   $1: sed file list with all the files to apply your substitutions
+  #   $2: backup directory for all your files
+  #   $3: sed searchpattern
+  #   $4: sed replacement
+  #   $5: new wiki page url to append
+  #  
+  #-----------------------------------------------------------------------------
+  # SED
+  # ===
+  # sed -options 'command' file
+  # sed -options 'command' < infile > outfile
+  # sed -options 'command1; command2' file
+  # options:
+  # -n do not print buffer/file
+  # -i apply/print to file
+  # -E or -r extended regular expression
+  # commands for search and print, delete, append, insert:
+  # N,M[!]p                         print OR [not] line(s)
+  # /pattern/[!]p                   print or [not] pattern(s)
+  # /pattern1/,/pattern2/[!]p       print or [not] between patterns
+  # N,M[!]d  OR  N,M!d              delete OR [not] line(s) 
+  # /pattern/[!]d                   delete OR [not] pattern(s)
+  # /pattern1/,/pattern2/[!]d       delete OR [not] between patterns
+  # N,M[!]a Text                    append Text OR [not] to lines(s) 
+  # /pattern/[!]a Text              append Text OR [not] to pattern
+  # /pattern1/,/pattern2/[!]a Text  append Text OR [not] between patterns
+  # N,M[!]i Text                    insert Text OR [not] to line(s) 
+  # /pattern/[!]i Text              insert Text OR [not] to pattern
+  # /pattern1/,/pattern2/[!]i Text  insert Text OR [not] between patterns
+  # /pattern/=                      print line numbers
+  # { ; }                           list of commands colon separated
+  # {p;q}                           print first (p) and quit (q)
+  # 
+  # command for search and replace on lines where pattern matches
+  # Index,/pattern/s/search/replace/sr_options
+  # Index
+  # 0              apply only to first match
+  # sr_options
+  # g              apply to all search instances
+  # n              apply only to nth search instance
+  # p              print only replaced lines
+  # w file         print to file
+  #
+  # apply only to first match
+  # -n '/RE/{p;q;}' file       # print only the first match
+  # '0,/RE/{//d;}' file        # delete only the first match
+  # '0,/RE/s//to_that/' file   # change only the first match
+  #
+  # regex goups
+  # search and replace only last occurence of search pattern in line
+  # \1: print content of first braces
+  # \2: print content of second braces
+  # sed -r 's/(.*)search/\1replace/'
+  # sed -r 's/(.*)search(.*)/\1replace\2/
+  #
+  # sort
+  # ====
+  # -r reverse the result 1,2,3 -> 3,2,1
+  # -n string numerical value
+  # -o write to file
+  # -u unique
   # ---------------------------------------------------------------------------
   #doc_end---------------------------------------------------------------------
-  [[ $DEBUG == 'y' ]] && echo "--$LINENO ${BASH_SOURCE[0]}:sed_s_in_files_md()"
+  [[ $DEBUG == 'y' ]] && echo "--$LINENO ${BASH_SOURCE[0]}:sed_in_files_md()"
   # ---------------------------------------------------------------------------
   #============================================================================
 
   # input arguments
-  local searchpattern=$1
-  local replacement=$2
-  local filelist=$3
-  local dirbak=$4  #backup folder
+  local filelist=$1
+  local dirbak=$2  #backup folder
+  local searchpattern=$3
+  local replacement=$4
+  local appendurl=$5
   echo; echo "--$LINENO search pattern: $searchpattern"
   echo "--$LINENO replacement: $replacement";
+  echo "--$LINENO appendurl: $appendurl";
 
 
   # temporary file: used for sed, and then moved
@@ -847,8 +971,8 @@ sed_s_in_files_md() {
       # answer is passed as a reference not a value! $answer won't work out
       local answer="the answer will be stored here"
       echo "--------------------------------------------------------------"
-      echo "next file to apply sed_s: $file"
-      if ! ask_user 'next_sed_s' "$LINENO" answer; then
+      echo "next file to apply sed: $file"
+      if ! ask_user 'next_sed' "$LINENO" answer; then
         echo "exit: $LINENO"; return 1; 
       fi
       if [[ "$answer" == "a" ]]; then echo "apply to this file"
@@ -874,11 +998,36 @@ sed_s_in_files_md() {
       echo "--$LINENO made copy: $newfilename"
       echo "          (and a backup if the file already existed)"
       echo "--------------------------------------------------------------"
+      
+      
+      # the value assigned to command line option -c or -cmd
+      # is assigned to global variable $TASK_2_COMMAND
+      case "$TASK_2_COMMAND" in 
+        sr)
+          # apply sed substitution to $file to whole line (g)
+          # avoid inline editing by writing into $filetmp
+          sed "s/$searchpattern/$replacement/g" "$file" > "$filetmp" \
+            && mv "$filetmp" "$file"
+          ;;
+        a_url)
+          echo "a_url"
+          sed_append_url "$file" "$filetmp" "$appendurl"
+          ;;
+        a)
+          echo "a"
+          ;;
+        i)
+          echo "i"
+          ;;
+        s)
+          echo "s"
+          ;;
+        *)
+          echo "command not available"
+          return 1
+          ;;
+      esac    
 
-      # apply sed substitution to $file to whole line (g)
-      # avoid inline editing by writing into $filetmp
-      sed "s/$searchpattern/$replacement/g" "$file" > $filetmp \
-        && mv $filetmp "$file"
       echo "--------------------------------------------------------------"
       echo "--$LINENO checked file: $file"
       echo "          (if you see no diff, no changes were made)";echo
@@ -1470,17 +1619,19 @@ function main() {
       else echo "$LINENO : something went wrong"
       fi
       echo "--------------------------------------------------------------"
-
-      # b.) give in the two variables TODO:
+      
+      # b.) add the command line variables TODO:
       local searchpattern="$SEARCH"
       local replacement="$REPLACE"
+      local appendurl="$APPEND_URL"
 
-      # c.) apply sed to $flelist_home_md
+      # c.) apply sed to $filelist_home_md
       #     for each file change the diff will be printed
       #     after every diff there is a user interaction
       local dirbak_Home_md=./bak_Home_md/
-      if ! sed_s_in_files_md "$searchpattern" "$replacement" \
-        "$filelist_home_md" "$dirbak_Home_md"; then
+      if ! sed_in_files_md "$filelist_home_md" "$dirbak_Home_md"
+        "$searchpattern" "$replacement" \
+        "$appendurl"; then
         echo "exit: $LINENO"; exit 1
       fi
 
@@ -1540,13 +1691,15 @@ function main() {
       # b.) give in the two variables TODO:
       local searchpattern="$SEARCH"
       local replacement="$REPLACE"
+      local appendurl="$APPEND_URL"
 
       # c.) apply sed to filelist_README_md 
       #     for each file change the diff will be printed
       #     after every diff there is a user interaction
       local dirbak_README_md=./bak_README_md/
-      if ! sed_s_in_files_md "$searchpattern" "$replacement" \
-        "$filelist_README_md" "$dirbak_README_md"; then
+      if ! sed_in_files_md "$filelist_README_md" "$dirbak_README_md"
+        "$searchpattern" "$replacement" \
+        "$appendurl"; then
         echo "exit: $LINENO"; exit 1 
       fi
 
