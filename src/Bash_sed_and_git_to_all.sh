@@ -19,11 +19,21 @@
 #   1.) to get help:         $ ./Scriptname --help
 #   2.) to get version info: $ ./Scriptname --version (or -v)
 #   3.) to get doc info:     $ ./Scriptname --doc
-#   4.) to run tasks:        get a complete task list with --help option
-#   4.1)   general cases:    $ ./Scriptname --task task_1_ { _3_, _4_ }
-#   4.2)   special cases:    $ SEARCH="mySearch" REPLACE="myReplacment" \
-#          (with global vars)    ./Scriptname --task_2_ { home_md, readme_md }
-#   5.) run with debug info: $ DEBUG='y' ./Scriptname --debug
+#   4.) to run task 2:       $ GLOBAL_VARNAME="value" \
+#                                ./Scriptname \
+#                                  --task Task_2_{ home_md | readme_md } \
+#                                  --cmd command_name
+#   4.1) command: sr         $ SEARCH="mySearch" REPLACE="myReplacment" \
+#        (search,replace)        ./Scriptname \
+#                                  --task Task_2_{ home_md | readme_md } \
+#                                  --cmd sr
+#   4.2) command: a_url      $ APPENDURL="my_new_Wiki_page_URL" \
+#        (append url)            ./Scriptname \
+#                                  --task Task_2_{ home_md | readme_md } \
+#                                  --cmd a_url
+#   5.) to run tasks:        get a complete task list with --help option
+#   5.1)  pattern:           $ ./Scriptname --task Task_1_ { _3_, _4_ }
+#   6.) run with debug info: $ DEBUG='y' ./Scriptname --debug
 # 
 # Show debug info:
 #   For full debug mode start your script with the following command. 
@@ -352,6 +362,8 @@ get_options() { # this function is called from main()
       -t|--task)
 
       # Set global variable START_AT_TASK by shifting first
+      # global variable is used in function sed_in_files_md()
+      # as a CASE condition to call the right function
       shift # past the key and to the value
       START_AT_TASK="$1"; echo "$START_AT_TASK"
 
@@ -362,6 +374,8 @@ get_options() { # this function is called from main()
       -c|--cmd)
 
       # Set global variable TASK_2_COMMAND by shifting first
+      # global variable is used in function sed_in_files_md()
+      # as a CASE condition to call the right function
       shift # past the key and to the value
       TASK_2_COMMAND="$1"; echo "$TASK_2_COMMAND"
 
@@ -970,31 +984,31 @@ sed_in_files_md() {
       echo "          (and a backup if the file already existed)"
       echo "--------------------------------------------------------------"
       
-      
       # the value assigned to command line option -c or -cmd
       # is assigned to global variable $TASK_2_COMMAND
       case "$TASK_2_COMMAND" in 
         sr)
+          echo "sed_in_files_md() case: sr"
           # apply sed substitution to $file to whole line (g)
           # avoid inline editing by writing into $filetmp
           sed "s/$searchpattern/$replacement/g" "$file" > "$filetmp" \
             && mv "$filetmp" "$file"
           ;;
         a_url)
-          echo "a_url"
+          echo "sed_in_files_md() case: a_url"
           sed_append_url "$file" "$filetmp" "$appendurl"
           ;;
         a)
-          echo "a: not yet implemented"
+          echo "sed_in_files_md() case: a: not yet implemented"
           ;;
         i)
-          echo "i: not yet implemented"
+          echo "sed_in_files_md() case: i: not yet implemented"
           ;;
         s)
-          echo "s: not yet implemented"
+          echo "sed_in_files_md() case: s: not yet implemented"
           ;;
         *)
-          echo "command not available"
+          echo "sed_in_files_md() case: command not available"
           return 1
           ;;
       esac    
@@ -1034,33 +1048,52 @@ sed_append_url(){
   # ---------------------------------------------------------------------------
   # sed_append_url(): For Task II: 
   # Purpose: 
-  #   It appends a new Wiki URL reference to the list at the end of an 
-  #   input file.
+  #   It adds a new Wiki URL reference to the list, wihich is at the end 
+  #   of the input file. Within this list the right place for the reference is
+  #   found and the new Wiki URL inserted.
   #   For now, I use it for all my README.md and Home.md GitHub pages.  
   # Arguments:
   #   $1:   filename of the file to change:
   #   $2:   a temporary file $filetmp used for SED to avoid the SED -i option
   #   $3:   the new URL to append
-  # How it works:
+  # How it is called:
+  #   It is called from function sed_in_files_md(), which is called inside 
+  #   main() function.
+  # Assumptions about the file structure:
+  #   It searches for two of the three comment strings above the URL reference
+  #   list. They must be there, unaltered and with a newline between it, and
+  #   the first URL entry.
+  # Why is the function so long, what does it check ...
+  #   1.) whether the entry is already there. Then it returns to the calling
+  #       function.
+  #   2.) whether the assigned reference number, which follows strict rules,
+  #       is the highest number. In that case it is added at the end.
+  #   3.) whether there is already at least one Wiki page for that repository.
+  #   3.1) if yes: it searches for the highest reference of those pages,
+  #        increments that value by one and adds the new reference after the
+  #        the last of this group.
+  #   3.2) if no: the new reference gets a number within its repository range
+  #        ending with a 3. Then it is added at the right place.
+  #   4.) whether something went wrong. E.g. if for some reason a search
+  #       did find nothing, when it should have.
+  # How 3.) works in a nutshell:
   #   It gets the URL of the new Wiki page and a filename of the page, to which
   #   the URL should be appended. 
   #   First it extracts the repository from the URL and and then fills this
   #   information into a pattern. The pattern is used by SED to find all
-  #   matching lines. From those lines the last one is determined as the place
+  #   matching lines. From those lines, the last one is determined as the place
   #   to append. Its reference number is extracted. With this information a 
-  #   new reference for the new URL is constructed which is then appended by a 
-  #   SED append command. 
+  #   new reference for the new URL is constructed, which is then appended by a 
+  #   SED append command.
   #   In case no match is found, a new reference is constructed and the URL
   #   added to its right place.
-  #   For both extraction tasks GREP -o is applied to a string.
-  # How it is called:
-  #   It is called from function sed_in_files_md(), which is called inside 
-  #   main() function.
+  #   For all extraction tasks GREP -o is applied to a string.
   # ---------------------------------------------------------------------------
   #doc_end---------------------------------------------------------------------
   [[ $DEBUG == 'y' ]] && echo "--$LINENO ${BASH_SOURCE[0]}:sed_append_url()"
   # ---------------------------------------------------------------------------
   #============================================================================
+
   echo "entering sed_append_url()"
 
   # INPUT arguments
@@ -1069,177 +1102,193 @@ sed_append_url(){
   local appendurl="$3"
 
   # PATTERN: define line number range to apply SED pattern search
-  local pattern_range1_begin
-  local pattern_range2_begin
-  pattern_range1_begin="\[\/\/\]: # .*'Code: README.*Home" 
-  pattern_range2_begin="\[\/\/\]: # .*all other 'Wiki"
-  echo "pattern_range1_begin: $pattern_range1_begin" 
-  echo "pattern_range2_begin: $pattern_range2_begin" 
+  # this pattern searches for the comment entries, they must be there.
+  local pat_commentline_1
+  local pat_commentline_2
+  pat_commentline_1="\[\/\/\]: # .*'Code: README.*Home" 
+  pat_commentline_2="\[\/\/\]: # .*all other 'Wiki"
+  echo "pat_commentline_1: $pat_commentline_1" 
+  echo "pat_commentline_2: $pat_commentline_2" 
 
   # SED: find pattern and return its line number
-  local sed_found_range1_begin_on_line
-  local sed_found_range2_begin_on_line
-  sed_found_range1_begin_on_line=$(sed -E -n\
-    "/$pattern_range1_begin/{=;}" "$file")
-  sed_found_range2_begin_on_line=$(sed -E -n\
-    "/$pattern_range2_begin/{=;}" "$file")
-  echo "sed_found_range1_begin_on_line: $sed_found_range1_begin_on_line"
-  echo "sed_found_range2_begin_on_line: $sed_found_range2_begin_on_line"
+  # now we now in which line the two comments are
+  local linenum_commentline_1
+  local linenum_commentline_2
+  linenum_commentline_1=$(sed -E -n\
+    "/$pat_commentline_1/{=;}" "$file")
+  linenum_commentline_2=$(sed -E -n\
+    "/$pat_commentline_2/{=;}" "$file")
+  echo "linenum_commentline_1: $linenum_commentline_1"
+  echo "linenum_commentline_2: $linenum_commentline_2"
   
-  # RANGE: only in range with line numbers xyz to end (\$) for Home.md
+  # RANGE: create a SED search range.
+  # now we have something like sed_range=(267,\$) twice.
   local sed_range1
   local sed_range2
-  sed_range1="$sed_found_range1_begin_on_line,\$"
-  sed_range2="$sed_found_range2_begin_on_line,\$"
+  sed_range1="$linenum_commentline_1,\$"
+  sed_range2="$linenum_commentline_2,\$"
   echo "sed_range1: $sed_range1" 
   echo "sed_range2: $sed_range2" 
   
-  # PATTERN: repositories name pattern
-  local pattern_repositories="qool-.*-loop"
+  # PATTERN: define repositories name pattern
+  # all repository names have this pattern
+  local pat_repos="qool-.*-loop"
 
   # GREP: extract qool-XXX-loop from string
   # -o: only print matching part
-  local search_repository
-  search_repository=$(echo "$appendurl" | grep -E -o "$pattern_repositories" )
-  echo "search this repository: $search_repository"
+  # now we know the repo name e.g. repo_name= qool-markdown-loop
+  local repo_name
+  repo_name=$(echo "$appendurl" | grep -E -o "$pat_repos" )
+  echo "search this repository: $repo_name"
   
-  # PATTERN: to search for (hard coded with one variable)
-  local pattern_url
-  pattern_url="^\[.*github\.com\/qoolixiloop\/$search_repository\/wiki"
-  echo "pattern to search: $pattern_url"
+  # PATTERN: to search for references that already might be there
+  # all URL references follow this pattern
+  local pat_url_ref
+  pat_url_ref="^\[.*github\.com\/qoolixiloop\/$repo_name\/wiki"
+  echo "pattern to search: $pat_url_ref"
 
-  # SED: print all matching lines into a variable
+  # SED: now we search in range $sed_range1 with that pattern and 
+  #      print all matching lines into a variable.
   # -n do not print buffer, /p print
-  # only in range $sed_range
-  local sed_found_matches
-  sed_found_matches=$(sed -E -n "$sed_range1{/$pattern_url/p}" "$file")
-  echo "sed_found_matches: $sed_found_matches"
+  local list_repo_url_refs
+  list_repo_url_refs=$(sed -E -n "$sed_range1{/$pat_url_ref/p}" "$file")
+  echo "list_repo_url_refs: $list_repo_url_refs"
   
-  # SED: print all line numbers of all matching lines into variable
+  # SED: now we search in range $sed_range1 with that pattern and 
+  #      print all line numbers of all matching lines into variable
   # -n do not print buffer, /{=;} output only line numbers
-  # only in range $sed_range
-  local sed_found_matches_on_lines
-  sed_found_matches_on_lines=$(sed -E -n "$sed_range1{/$pattern_url/{=;}}" \
+  local linenum_repo_url_refs
+  linenum_repo_url_refs=$(sed -E -n "$sed_range1{/$pat_url_ref/{=;}}" \
     "$file")
-  echo "sed_found_matches_on_lines: $sed_found_matches_on_lines"
+  echo "linenum_repo_url_refs: $linenum_repo_url_refs"
   
-  # CONDITION: in case SED found matching lines (should always be true) 
-  if [[ -n "$sed_found_matches"  ]]; then 
+  # CASE: now we check for all the cases 1.) to 4.) described in the
+  #       function description. 
+  # This condition must always be true. 
+  if [[ -n "$list_repo_url_refs"  ]]; then 
   
-    # check if URL already exist
-    # if yes return to calling function
-    # EXPLODE: String to Array with newline separator
-    local matches_array
-    readarray -t matches_array <<<"$sed_found_matches"
-    declare -p matches_array;
+    # CASE: check if URL already exist for that repo
+    #       if yes return to calling function
     
-    local match
-    for match in "${matches_array[@]}"; do
+    # READARRAY: transform newline separated string into an array
+    local arr_repo_url_refs
+    readarray -t arr_repo_url_refs <<<"$list_repo_url_refs"
+    declare -p arr_repo_url_refs;
+
+    # LOOP: loop through all URL references of repo
+    local repo_url_ref
+    for repo_url_ref in "${arr_repo_url_refs[@]}"; do
       
-      echo "match; $match"
-      local pattern_match_url
-      local match_url
-      pattern_match_url="https://\S*"
-      match_url=$(echo "$match" | grep -E -o "$pattern_match_url" )
+      echo "repo_url_ref: $repo_url_ref"
+      local pat_repo_url_ref
+      local repo_url
+      pat_repo_url_ref="https://\S*"
+      repo_url=$(echo "$repo_url_ref" | grep -E -o "$pat_repo_url_ref" )
       
-      echo "match_url: $match_url"
+      echo "repo_url: $repo_url"
       echo "appendurl: $appendurl"
 
-      if [[ "$match_url" == "$appendurl"  ]]; then
+      if [[ "$repo_url" == "$appendurl"  ]]; then
         echo $'==================\nURL already exists\n==================='
         return 1
       fi 
     
     done
 
+    # CASE: $appendurl does not yet exist
+    #       search for highest entry for this repo
+
     # TAIL: extract highest line number
-    # $sed_found_matches_on_lines is a space separated string
+    # $linenum_repo_url_refs is a space separated string
     # -n: string(s) as numerical values
-    local nr_max
-    nr_max=$(echo "${sed_found_matches_on_lines}" | sort -n | tail -1)
-    echo "nr_max: $nr_max"
+    local linenum_max_repo_url_ref
+    linenum_max_repo_url_ref=$(echo "${linenum_repo_url_refs}" | sort -n | tail -1)
+    echo "linenum_max_repo_url_ref: $linenum_max_repo_url_ref"
 
     # SED: extract line with that line number
     # -n do not print buffer, N,p print line
-    local line_max
-    line_max=$(sed -E -n "${nr_max}p" "$file")
-    echo "line_max: $line_max"
+    local max_repo_url_ref
+    max_repo_url_ref=$(sed -E -n "${linenum_max_repo_url_ref}p" "$file")
+    echo "max_repo_url_ref: $max_repo_url_ref"
 
     #PATTERN: url reference and url reference number
-    local pattern_url_ref
-    local pattern_url_nr
-    pattern_url_ref='\[[0-9]{3,4}]:'
-    pattern_url_nr='[0-9]{3,4}'
+    local pat_url_ref
+    local pat_url_ref_nr
+    pat_url_ref='\[[0-9]{3,4}]:'
+    pat_url_ref_nr='[0-9]{3,4}'
     
     # GREP: extract the URL reference number of that line, using GREP -o
     # beware: break line with backslash and no spaces before and after \
-    local ref_num_of_match
-    ref_num_of_match=$(echo "$line_max" | grep -E -o "$pattern_url_ref"\
-      | grep -E -o "$pattern_url_nr")
-    echo "ref_num_of_match: $ref_num_of_match"
+    local num_max_repo_url_ref
+    num_max_repo_url_ref=$(echo "$max_repo_url_ref" | grep -E -o "$pat_url_ref"\
+      | grep -E -o "$pat_url_ref_nr")
+    echo "num_max_repo_url_ref: $num_max_repo_url_ref"
 
     # ARITHMETIC: construct the new reference [1234]: http://...
     # beware: spaces are part of the syntax, and variables without $
-    local new_ref_num
-    new_ref_num=$(( ref_num_of_match + 1 ))
-    echo "new_ref_num: $new_ref_num"
-    local new_ref
-    new_ref="[$new_ref_num]: $appendurl"
-    echo "new_ref: $new_ref"
+    local num_new_repo_url_ref
+    num_new_repo_url_ref=$(( num_max_repo_url_ref + 1 ))
+    echo "num_new_repo_url_ref: $num_new_repo_url_ref"
+    local new_repo_url_ref
+    new_repo_url_ref="[$num_new_repo_url_ref]: $appendurl"
+    echo "new_repo_url_ref: $new_repo_url_ref"
 
-    # find out if last digit of ref_num_of_match is a 2
-    # that means it only has a README.md and a Home.md page
+    # CUT SUBSTRING: ${string_varible: pos_from : length_to_the_right}
+    #      cut out a substring
     # beware: as always in Bash, spaces are part of the syntax
-    # ${var: pos : length}
-    local last_digit
-    last_digit=${ref_num_of_match: -1 : 1}
-    echo "last_digit: $last_digit"
+    local num_last_digit
+    num_last_digit=${num_max_repo_url_ref: -1 : 1}
+    echo "num_last_digit: $num_last_digit"
 
-    if  (( "$last_digit" == 2 )); then
-
-      echo "last_digit=2"
-      local nr_of_lines_of_file
-      local line_num
-      local line_string
-      local line_ref_num
+    # CASE: find out if last digit of num_max_repo_url_ref is a 2
+    #       that means it only has a README.md and a Home.md page
+    if  (( "$num_last_digit" == 2 )); then
 
       # ARITHMETIC: line of first url reference
-      line_num=$(( sed_found_range2_begin_on_line + 2 ))
+      local num_iter_line_file
+      num_iter_line_file=$(( linenum_commentline_2 + 2 ))
       
       # WC: nr of line in the file: also grep -c '' $file
-      nr_of_lines_of_file=$(wc -l < "$file")
-      echo "nr of lines in  file: $nr_of_lines_of_file"
+      local num_lines_file
+      num_lines_file=$(wc -l < "$file")
+      echo "nr of lines in file: $num_lines_file"
       
-      # LOOP,ARITHMETIC: find the place to insert the $new_ref
-      while (( line_num <= nr_of_lines_of_file )); do 
+      # LOOP,ARITHMETIC: find the place to insert the $new_repo_url_ref
+      while (( num_iter_line_file <= num_lines_file )); do 
         
-        # SED: get string
-        line_string=$(sed -E -n "${line_num}p" "$file")
-        echo "line_string: $line_string"
+        # SED: get line of file
+        local line_file
+        line_file=$(sed -E -n "${num_iter_line_file}p" "$file")
+        echo "line_file: $line_file"
         
-        # GREP: get URL reference number
-        line_ref_num=$(echo "$line_string" | grep -E -o "$pattern_url_nr")
-        echo "line_ref_num: $line_ref_num"
+        # GREP: get URL reference number of line of file
+        local num_repo_url_ref
+        num_repo_url_ref=$(echo "$line_file" | grep -E -o "$pat_url_ref_nr")
+        echo "num_repo_url_ref: $num_repo_url_ref"
         
-        #print numbers
-        echo "new_ref_num: $new_ref_num"
-        echo "line_num: $line_num"
-        echo "nr_of_lines_of_file: $nr_of_lines_of_file"
+        #print numbers to shell
+        echo "num_new_repo_url_ref: $num_new_repo_url_ref"
+        echo "num_iter_line_file: $num_iter_line_file"
+        echo "num_lines_file: $num_lines_file"
         
-        # TEST: line_ref_num empty, 
-        # then insert and break, new_ref_num is highest number
-        if [[ -z $line_ref_num  ]]; then
+        # CASE: last entry reached.
+        #       test if num_repo_url_ref empty, 
+        #       that means $num_new_repo_url_ref is the overall highest number
+        #       then insert the $new_repo_url_ref and break loop 
+        if [[ -z $num_repo_url_ref  ]]; then
 
-          echo "reached last line, line_num: $line_num"
+          echo "reached last line, num_iter_line_file: $num_iter_line_file"
 
           # SED: place found to insert  
           # command: $i $text to $file at line $N
-          # write to $filetmp and move that file to $file (overwrite)
-          # to avoid inline editing by writing into $filetmp
-          # beware: sed -n will empty the file.
-          local N="$line_num"
+          # write to $filetmp 
+          # at end of function move that file to $file (overwrite)
+          # in order to avoid inline editing by writing into $filetmp
+          # beware: sed -n will copy an empty buffer to the file. 
+          #         don't use it here.
+          local N="$num_iter_line_file"
           local cmd="i"
-          local text="$new_ref"
+          local text="$new_repo_url_ref"
           local cmd="${N}${cmd} $text"
           echo "cmd: $cmd"
           sed -E "$cmd" "$file" >  "$filetmp"
@@ -1248,23 +1297,30 @@ sed_append_url(){
 
         fi
 
+        # CASE: not yet at the end of file
+        #       not yet found line to insert, move on
+
         # ARITHMETIC: compare the numbers
-        if (( new_ref_num > line_ref_num )); then
+        if (( num_new_repo_url_ref > num_repo_url_ref )); then
          
-          echo "not yet, line_num: $line_num"
+          echo "not yet, num_iter_line_file: $num_iter_line_file"
        
         else  
           
-          echo "found line, line_num: $line_num"
+        # CASE: $num_new_repo_url_ref is lower than $num_repo_url_ref
+        #       insert it here, break the loop
+
+          echo "found line, num_iter_line_file: $num_iter_line_file"
 
           # SED: place found to insert  
           # command: $i $text to $file at line $N
           # write to $filetmp and move that file to $file (overwrite)
           # to avoid inline editing by writing into $filetmp
-          # beware: sed -n will empty the file.
-          local N="$line_num"
+          # beware: sed -n will copy an empty buffer to the file. 
+          #         don't use it here.
+          local N="$num_iter_line_file"
           local cmd="i"
-          local text="$new_ref"
+          local text="$new_repo_url_ref"
           local cmd="${N}${cmd} $text"
           echo "cmd: $cmd"
           sed -E "$cmd" "$file" >  "$filetmp"
@@ -1273,28 +1329,36 @@ sed_append_url(){
 
         fi
         
-        # ARITHMETIC: increase iterator
-        line_num=$(( line_num + 1 ))
+        # ARITHMETIC: increase line iterator for loop
+        num_iter_line_file=$(( num_iter_line_file + 1 ))
 
       done
 
-    elif (( "$last_digit" > 2 )); then 
+    # CASE: $num_max_repo_url_ref is greater than 2
+    #       that means it has additional Wiki pages
+    #       just jump to that line number and append $new_repo_url_ref
+
+    elif (( "$num_last_digit" > 2 )); then 
       
-      echo "last digit>2"
+      echo "num_last digit > 2"
       
       # SED: command $a $text to $file at line $N
       # write to $filetmp and move that file to $file (overwrite)
       # to avoid inline editing by writing into $filetmp
-      # beware: sed -n will empty the file.
-      local N="$nr_max"
+      # beware: sed -n will copy an empty buffer to the file. 
+      #         don't use it here.
+      local N="$linenum_max_repo_url_ref"
       local cmd="a"
-      local text="$new_ref"
+      local text="$new_repo_url_ref"
       local cmd="${N}${cmd} $text"
       echo "cmd:sed -E $cmd"
       sed -E "$cmd" "$file" >  "$filetmp"
-   
+
+    # CASE: $num_last_digit < 2
+    #       this means there is a README.md or Home.md missing
+    #       or $num_last_digit was erroneously extracted  
     else
-   
+
       echo "someting went wrong"
    
     fi
@@ -1303,8 +1367,12 @@ sed_append_url(){
     diff "$file" "$filetmp"
     
     #MV: move/ overwrite $file with $filetmp
-    #mv "$filetmp" "$file"
-    
+    mv "$filetmp" "$file"
+
+  # CASE: $list_repo_url_refs is empty
+  #       this means no Wiki pages found, 
+  #       also README.md and Home.md are missing
+  #       or $list_repo_url_refs was erroneously extracted
   else
     echo "no matches found. something went wrong."
   fi

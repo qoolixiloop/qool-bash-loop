@@ -77,9 +77,9 @@ test_case_3() {
 echo "1. script"
 
 # call test cases
-#test_case_1 "$@"
+test_case_1 "$@"
 #test_case_2 "$@"
-test_case_3 "$@"
+#test_case_3 "$@"
 
 echo "2. script"
 

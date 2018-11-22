@@ -10,85 +10,95 @@ setlocal fdn=20
 setlocal fen
 silent! normal! zE
 4,15fold
-48,48fold
-16,48fold
-51,63fold
-66,80fold
-81,91fold
-97,111fold
-112,135fold
-141,172fold
-173,226fold
-232,244fold
-245,252fold
-258,286fold
-287,423fold
-429,448fold
-449,520fold
-526,554fold
-555,565fold
-571,608fold
-609,614fold
-618,641fold
-653,668fold
-669,710fold
-716,728fold
-729,751fold
-757,769fold
-770,797fold
-803,907fold
-908,1025fold
-1031,1063fold
-1064,1316fold
-1321,1336fold
-1337,1386fold
-1391,1406fold
-1407,1455fold
-1461,1477fold
-1478,1527fold
-1533,1548fold
-1549,1597fold
-1603,1633fold
-1634,1752fold
-1758,1775fold
-1776,1790fold
-1791,1795fold
-1796,1816fold
-1819,1824fold
-1826,1849fold
-1851,1857fold
-1859,1917fold
+58,58fold
+16,58fold
+61,73fold
+76,90fold
+91,101fold
+107,121fold
+122,145fold
+151,182fold
+183,236fold
+242,254fold
+255,262fold
+268,296fold
+297,437fold
+443,462fold
+463,534fold
+540,568fold
+569,579fold
+585,622fold
+623,628fold
+632,655fold
+667,682fold
+683,724fold
+730,742fold
+743,765fold
+771,783fold
+784,811fold
+817,921fold
+922,1039fold
+1045,1095fold
+1096,1384fold
+1389,1404fold
+1405,1454fold
+1459,1474fold
+1475,1523fold
+1529,1545fold
+1546,1595fold
+1601,1616fold
+1617,1665fold
+1671,1701fold
+1702,1820fold
+1826,1843fold
+1844,1858fold
+1859,1863fold
+1864,1884fold
+1887,1892fold
+1894,1917fold
 1919,1925fold
 1927,1985fold
 1987,1993fold
-1995,2024fold
-2026,2032fold
-2034,2064fold
-2066,2072fold
-2074,2104fold
-2106,2112fold
-2114,2147fold
-2149,2155fold
-2157,2171fold
-2173,2179fold
-2181,2199fold
-2202,2205fold
-2202,2206fold
-2215,2240fold
-2241,2267fold
-2268,2275fold
-1031
+1995,2053fold
+2055,2061fold
+2063,2092fold
+2094,2100fold
+2102,2132fold
+2134,2140fold
+2142,2172fold
+2174,2180fold
+2182,2215fold
+2217,2223fold
+2225,2239fold
+2241,2247fold
+2249,2267fold
+2270,2273fold
+2270,2274fold
+2283,2308fold
+2309,2335fold
+2336,2343fold
+16
 normal! zo
-1064
+297
 normal! zo
-1758
+817
 normal! zo
-let s:l = 1149 - ((26 * winheight(0) + 16) / 33)
+922
+normal! zo
+1045
+normal! zo
+1826
+normal! zo
+1927
+normal! zo
+1995
+normal! zo
+let s:l = 32 - ((30 * winheight(0) + 16) / 33)
 if s:l < 1 | let s:l = 1 | endif
 exe s:l
 normal! zt
-1149
-normal! 075|
+32
+normal! 074|
 let &so = s:so_save | let &siso = s:siso_save
 doautoall SessionLoadPost
 " vim: set ft=vim :
