@@ -1042,7 +1042,7 @@ sed_append_url(){
   #   $2:   a temporary file $filetmp used for SED to avoid the SED -i option
   #   $3:   the new URL to append
   # How it works:
-  #   It gets the URL of my new Wiki page and a filename of the page, to which
+  #   It gets the URL of the new Wiki page and a filename of the page, to which
   #   the URL should be appended. 
   #   First it extracts the repository from the URL and and then fills this
   #   information into a pattern. The pattern is used by SED to find all
@@ -1050,6 +1050,8 @@ sed_append_url(){
   #   to append. Its reference number is extracted. With this information a 
   #   new reference for the new URL is constructed which is then appended by a 
   #   SED append command. 
+  #   In case no match is found, a new reference is constructed and the URL
+  #   added to its right place.
   #   For both extraction tasks GREP -o is applied to a string.
   # How it is called:
   #   It is called from function sed_in_files_md(), which is called inside 
@@ -1059,16 +1061,39 @@ sed_append_url(){
   [[ $DEBUG == 'y' ]] && echo "--$LINENO ${BASH_SOURCE[0]}:sed_append_url()"
   # ---------------------------------------------------------------------------
   #============================================================================
- 
-  # input arguments
+  echo "entering sed_append_url()"
+
+  # INPUT arguments
   local file="$1"
   local filetmp="$2"
   local appendurl="$3"
 
-  # define line number range to apply SED
-  # only in range with line numbers 314 to end (\$)
-  local sed_range="314,\$"
+  # PATTERN: define line number range to apply SED pattern search
+  local pattern_range1_begin
+  local pattern_range2_begin
+  pattern_range1_begin="\[\/\/\]: # .*'Code: README.*Home" 
+  pattern_range2_begin="\[\/\/\]: # .*all other 'Wiki"
+  echo "pattern_range1_begin: $pattern_range1_begin" 
+  echo "pattern_range2_begin: $pattern_range2_begin" 
 
+  # SED: find pattern and return its line number
+  local sed_found_range1_begin_on_line
+  local sed_found_range2_begin_on_line
+  sed_found_range1_begin_on_line=$(sed -E -n\
+    "/$pattern_range1_begin/{=;}" "$file")
+  sed_found_range2_begin_on_line=$(sed -E -n\
+    "/$pattern_range2_begin/{=;}" "$file")
+  echo "sed_found_range1_begin_on_line: $sed_found_range1_begin_on_line"
+  echo "sed_found_range2_begin_on_line: $sed_found_range2_begin_on_line"
+  
+  # RANGE: only in range with line numbers xyz to end (\$) for Home.md
+  local sed_range1
+  local sed_range2
+  sed_range1="$sed_found_range1_begin_on_line,\$"
+  sed_range2="$sed_found_range2_begin_on_line,\$"
+  echo "sed_range1: $sed_range1" 
+  echo "sed_range2: $sed_range2" 
+  
   # PATTERN: repositories name pattern
   local pattern_repositories="qool-.*-loop"
 
@@ -1087,34 +1112,58 @@ sed_append_url(){
   # -n do not print buffer, /p print
   # only in range $sed_range
   local sed_found_matches
-  sed_found_matches=$(sed -E -n "$sed_range{/$pattern_url/p}" "$file")
+  sed_found_matches=$(sed -E -n "$sed_range1{/$pattern_url/p}" "$file")
+  echo "sed_found_matches: $sed_found_matches"
   
   # SED: print all line numbers of all matching lines into variable
   # -n do not print buffer, /{=;} output only line numbers
   # only in range $sed_range
   local sed_found_matches_on_lines
-  sed_found_matches_on_lines=$(sed -E -n "$sed_range{/$pattern_url/{=;}}" \
+  sed_found_matches_on_lines=$(sed -E -n "$sed_range1{/$pattern_url/{=;}}" \
     "$file")
+  echo "sed_found_matches_on_lines: $sed_found_matches_on_lines"
   
-  # CONDITION: in case SED found matching lines  
+  # CONDITION: in case SED found matching lines (should always be true) 
   if [[ -n "$sed_found_matches"  ]]; then 
-    
-    # ECHO: print info to the screen
-    echo "1.SED) found matches: ${sed_found_matches}"
-    echo "2.SED) found matches on lines: ${sed_found_matches_on_lines}"
   
+    # check if URL already exist
+    # if yes return to calling function
+    # EXPLODE: String to Array with newline separator
+    local matches_array
+    readarray -t matches_array <<<"$sed_found_matches"
+    declare -p matches_array;
+    
+    local match
+    for match in "${matches_array[@]}"; do
+      
+      echo "match; $match"
+      local pattern_match_url
+      local match_url
+      pattern_match_url="https://\S*"
+      match_url=$(echo "$match" | grep -E -o "$pattern_match_url" )
+      
+      echo "match_url: $match_url"
+      echo "appendurl: $appendurl"
+
+      if [[ "$match_url" == "$appendurl"  ]]; then
+        echo $'==================\nURL already exists\n==================='
+        return 1
+      fi 
+    
+    done
+
     # TAIL: extract highest line number
     # $sed_found_matches_on_lines is a space separated string
     # -n: string(s) as numerical values
-    local N_max
-    N_max=$(echo "${sed_found_matches_on_lines}" | sort -n | tail -1)
-    echo "N_max: $N_max"
+    local nr_max
+    nr_max=$(echo "${sed_found_matches_on_lines}" | sort -n | tail -1)
+    echo "nr_max: $nr_max"
 
     # SED: extract line with that line number
     # -n do not print buffer, N,p print line
-    local L_max
-    L_max=$(sed -E -n "${N_max}p" "$file")
-    echo "L_max: $L_max"
+    local line_max
+    line_max=$(sed -E -n "${nr_max}p" "$file")
+    echo "line_max: $line_max"
 
     #PATTERN: url reference and url reference number
     local pattern_url_ref
@@ -1125,29 +1174,143 @@ sed_append_url(){
     # GREP: extract the URL reference number of that line, using GREP -o
     # beware: break line with backslash and no spaces before and after \
     local ref_num_of_match
-    ref_num_of_match=$(echo "$L_max" | grep -E -o "$pattern_url_ref"\
+    ref_num_of_match=$(echo "$line_max" | grep -E -o "$pattern_url_ref"\
       | grep -E -o "$pattern_url_nr")
-    
+    echo "ref_num_of_match: $ref_num_of_match"
+
     # ARITHMETIC: construct the new reference [1234]: http://...
     # beware: spaces are part of the syntax, and variables without $
     local new_ref_num
     new_ref_num=$(( ref_num_of_match + 1 ))
-    echo "$new_ref_num"
+    echo "new_ref_num: $new_ref_num"
     local new_ref
     new_ref="[$new_ref_num]: $appendurl"
+    echo "new_ref: $new_ref"
 
-    # SED: command $a $text to $file at line $N
-    # write to $filetmp and move that file to $file (overwrite)
-    # avoid inline editing by writing into $filetmp
-    local N="$new_ref_num"
-    local cmd="a"
-    local text="$new_ref"
-    sed "$N $cmd $text" "$file" >  "$filetmp" \
-          && mv "$filetmp" "$file"
+    # find out if last digit of ref_num_of_match is a 2
+    # that means it only has a README.md and a Home.md page
+    # beware: as always in Bash, spaces are part of the syntax
+    # ${var: pos : length}
+    local last_digit
+    last_digit=${ref_num_of_match: -1 : 1}
+    echo "last_digit: $last_digit"
+
+    if  (( "$last_digit" == 2 )); then
+
+      echo "last_digit=2"
+      local nr_of_lines_of_file
+      local line_num
+      local line_string
+      local line_ref_num
+
+      # ARITHMETIC: line of first url reference
+      line_num=$(( sed_found_range2_begin_on_line + 2 ))
+      
+      # WC: nr of line in the file: also grep -c '' $file
+      nr_of_lines_of_file=$(wc -l < "$file")
+      echo "nr of lines in  file: $nr_of_lines_of_file"
+      
+      # LOOP,ARITHMETIC: find the place to insert the $new_ref
+      while (( line_num <= nr_of_lines_of_file )); do 
+        
+        # SED: get string
+        line_string=$(sed -E -n "${line_num}p" "$file")
+        echo "line_string: $line_string"
+        
+        # GREP: get URL reference number
+        line_ref_num=$(echo "$line_string" | grep -E -o "$pattern_url_nr")
+        echo "line_ref_num: $line_ref_num"
+        
+        #print numbers
+        echo "new_ref_num: $new_ref_num"
+        echo "line_num: $line_num"
+        echo "nr_of_lines_of_file: $nr_of_lines_of_file"
+        
+        # TEST: line_ref_num empty, 
+        # then insert and break, new_ref_num is highest number
+        if [[ -z $line_ref_num  ]]; then
+
+          echo "reached last line, line_num: $line_num"
+
+          # SED: place found to insert  
+          # command: $i $text to $file at line $N
+          # write to $filetmp and move that file to $file (overwrite)
+          # to avoid inline editing by writing into $filetmp
+          # beware: sed -n will empty the file.
+          local N="$line_num"
+          local cmd="i"
+          local text="$new_ref"
+          local cmd="${N}${cmd} $text"
+          echo "cmd: $cmd"
+          sed -E "$cmd" "$file" >  "$filetmp"
+          
+          break;
+
+        fi
+
+        # ARITHMETIC: compare the numbers
+        if (( new_ref_num > line_ref_num )); then
+         
+          echo "not yet, line_num: $line_num"
+       
+        else  
+          
+          echo "found line, line_num: $line_num"
+
+          # SED: place found to insert  
+          # command: $i $text to $file at line $N
+          # write to $filetmp and move that file to $file (overwrite)
+          # to avoid inline editing by writing into $filetmp
+          # beware: sed -n will empty the file.
+          local N="$line_num"
+          local cmd="i"
+          local text="$new_ref"
+          local cmd="${N}${cmd} $text"
+          echo "cmd: $cmd"
+          sed -E "$cmd" "$file" >  "$filetmp"
+          
+          break;
+
+        fi
+        
+        # ARITHMETIC: increase iterator
+        line_num=$(( line_num + 1 ))
+
+      done
+
+    elif (( "$last_digit" > 2 )); then 
+      
+      echo "last digit>2"
+      
+      # SED: command $a $text to $file at line $N
+      # write to $filetmp and move that file to $file (overwrite)
+      # to avoid inline editing by writing into $filetmp
+      # beware: sed -n will empty the file.
+      local N="$nr_max"
+      local cmd="a"
+      local text="$new_ref"
+      local cmd="${N}${cmd} $text"
+      echo "cmd:sed -E $cmd"
+      sed -E "$cmd" "$file" >  "$filetmp"
+   
+    else
+   
+      echo "someting went wrong"
+   
+    fi
     
+    #DIFF: show differences before and after
+    diff "$file" "$filetmp"
+    
+    #MV: move/ overwrite $file with $filetmp
+    #mv "$filetmp" "$file"
+    
+  else
+    echo "no matches found. something went wrong."
   fi
   
   # return status of the last statement executed
+  echo "leaving sed_append_url"
   return 
 
 }
@@ -2048,6 +2211,7 @@ function main() {
 
 
 
+#==============================================================================
 #doc_begin---------------------------------------------------------------------
 # -----------------------------------------------------------------------------
 # Python style: run main() if this script is executed but not if it is sourced
@@ -2097,9 +2261,16 @@ function main() {
 #    In this script I use 2.) when I need all command line arguments and 3.) if 
 #    if I only need a subset.
 # -----------------------------------------------------------------------------
-#doc_end-----------------------------------------------------------------------
+#doc_end------------------------------------------------------------------------
+[[ $DEBUG == 'y' ]] && echo "--$LINENO ${BASH_SOURCE[0]}:before calling main()"
+# -----------------------------------------------------------------------------
+#==============================================================================
 unset BASH_SOURCE 2>/dev/null
 test ".$0" != ".${BASH_SOURCE[0]}" || main "$@"
 # -----------------------------------------------------------------------------
 if [[ $? == 1 ]]; then exit 1; fi
-exit 0
+[[ $DEBUG == 'y' ]] && echo "--$LINENO ${BASH_SOURCE[0]}:leaving script"
+# only exit if not sourced 
+# otherwise it would also stops execution of calling script
+test ".$0" != ".${BASH_SOURCE[0]}" || exit 0
+# -----------------------------------------------------------------------------
