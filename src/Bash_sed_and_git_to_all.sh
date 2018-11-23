@@ -31,7 +31,7 @@
 #        (append url)            ./Scriptname \
 #                                  --task Task_2_{ home_md | readme_md } \
 #                                  --cmd a_url
-#   5.) to run tasks:        get a complete task list with --help option
+#   5.) to run other tasks:  get a complete task list with --help option
 #   5.1)  pattern:           $ ./Scriptname --task Task_1_ { _3_, _4_ }
 #   6.) run with debug info: $ DEBUG='y' ./Scriptname --debug
 # 
@@ -1415,6 +1415,7 @@ sed_search_replace() {
   #   $7, $OPTIONS   : option e.g. g, gc, p, d, a, i
   #   $8, $SEPARATOR : separator (if you have many backslashes use e.g | or #)
   # Escape:
+  # ( the list is most certainly not 100% complete, but shows most cases)
   #  "      : used to build the command string -> must be escaped everywhere
   #  /      : used to separate command strings -> must be escaped everywhere
   #         : or use $8 to define a new separator, e.g. | or #
@@ -1423,6 +1424,8 @@ sed_search_replace() {
   #         : any symbol can be escaped, whether necessary or not
   #  \\     : to escape an escape
   #  \\\    : if you have a literal separator
+  #  [      : even inside of groups ( \[  ] ) it has to be escaped, if meaning 
+  #         : is literal. Otherwise it is parsed as a class.
   #  &      : used in the replacement to include the match into the replacement
   #         : -> escape it in the replacement if literal meaning is wanted
   #  in $4  : regex! any symbol must be escaped if literal meaning is wanted
@@ -1498,7 +1501,7 @@ sed_search_replace() {
   if [[ -n "$sep"  ]]; then
     cmd="s${sep}${pattern}${sep}${search}${sep}${replace}${sep}g"
   else
-    cmd="s/$pattern/$search/$replace/g}"
+    cmd="s/$pattern/$search/$replace/g"
   fi
 
   echo "cmd: $cmd"
@@ -1507,9 +1510,9 @@ sed_search_replace() {
   elif [[ -n "$search" ]] && [[ -n "$replace" ]]; then
     
     if [[ -n "$sep"  ]]; then
-      cmd="s${sep}${search}${sep}${replace}${sep}g}"
+      cmd="s${sep}${search}${sep}${replace}${sep}g"
     else
-      cmd="s/$search/$replace/g}"
+      cmd="s/$search/$replace/g"
     fi
     
     echo "cmd: $cmd"
@@ -1552,12 +1555,82 @@ sed_search_replace() {
 }
 # -----------------------------------------------------------------------------
 
+git_diff_head_dirlist() {
+
+  #============================================================================
+  #doc_begin-------------------------------------------------------------------
+  # ---------------------------------------------------------------------------
+  # git_diff_head_dirlist(): For Task III
+  # Purpose:
+  #   apply git status to all your directories
+  #   it uses the shell function 
+  #     $ git status
+  # Arguments:
+  #   $1:   list of all directories to apply the job
+  # ---------------------------------------------------------------------------
+  #doc_end---------------------------------------------------------------------
+  [[ $DEBUG == 'y' ]] && echo "--$LINENO ${BASH_SOURCE[0]}:git_status_dirlst()"
+  # ---------------------------------------------------------------------------
+  #============================================================================
+
+  # input arguments
+  local dirlist="$1"
+  local pwd_script="$2"
+
+  # loop through the list of directories
+  for directory in $dirlist; do
+
+    # if $directory exists (-e) go on
+    # otherwise continue with next directory in $dirlist
+    [ -e "$directory" ] || continue
+
+    # user interaction: 
+    # if the function returns 1, do exit function with return 1
+    # if user answer a, c, b, t act accordingly
+    # answer is passed as a reference not a value! $answer won't work out
+    local answer="the answer will be stored here"
+    echo "--------------------------------------------------------------"
+    echo "next repository to apply git diff HEAD: $directory"
+    if ! ask_user 'next_git_status' "$LINENO" answer; then
+      echo "exit: $LINENO"; return 1; 
+    fi
+    if [[ "$answer" == "a" ]]; then echo "apply to this file"
+    elif [[ "$answer" == "c" ]]; then echo "cont. with next file"; continue
+    elif [[ "$answer" == "b" ]]; then echo "break this loop"; break
+    elif [[ "$answer" == "t" ]]; then echo "terminate function"; return 1
+    else echo "$LINENO : something went wrong"
+    fi
+    echo "--------------------------------------------------------------"
+
+    # move to local repository, or if it fails
+    # return 1 to indicate that the script shall terminate
+    cd "$directory"  || return 1
+
+    # show status
+    echo "--------------------------------------------------------------"
+    echo "$directory"
+    echo "--------------------------------------------------------------"
+    /usr/bin/git diff HEAD
+
+    # move to local script path, or if it fails
+    # return 1 to indicate that the script shall terminate
+    cd "$pwd_script"  || return 1
+
+  done
+
+  # return status of the last statement executed
+  return
+
+}
+# -----------------------------------------------------------------------------
+
+
 git_status_dirlist() {
 
   #============================================================================
   #doc_begin-------------------------------------------------------------------
   # ---------------------------------------------------------------------------
-  # git_status_dirlist(): For Task IV
+  # git_status_dirlist(): For Task III
   # Purpose:
   #   apply git status to all your directories
   #   it uses the shell function 
@@ -1627,7 +1700,7 @@ git_add_dirlist() {
   #============================================================================
   #doc_begin-------------------------------------------------------------------
   # ---------------------------------------------------------------------------
-  # git_add_dirlist(): For Task IV
+  # git_add_dirlist(): For Task III
   # Purpose:
   #   apply git add . to all your directories
   #   it uses the shell function 
@@ -1697,7 +1770,7 @@ git_commit_dirlist(){
   #============================================================================
   #doc_begin-------------------------------------------------------------------
   # ---------------------------------------------------------------------------
-  # git_commit_dirlist(): For Task IV
+  # git_commit_dirlist(): For Task III
   # Purpose:
   #   apply git commit to all your directories
   #   it uses the shell function 
@@ -1769,7 +1842,7 @@ git_push_dirlist(){
   #============================================================================
   #doc_begin-------------------------------------------------------------------
   # ---------------------------------------------------------------------------
-  # git_push_dirlist(): For Task IV
+  # git_push_dirlist(): For Task III
   # Purpose:
   #   apply git push to all your directories
   #   it uses the shell function 
@@ -1839,7 +1912,7 @@ git_all_steps_dirlist() {
   #============================================================================
   #doc_begin-------------------------------------------------------------------
   # ---------------------------------------------------------------------------
-  # git_all_steps_dirlist(): For Task V
+  # git_all_steps_dirlist(): For Task IV
   # Purpose:
   #   apply git status, add, commit, push to one repository after another,
   #     for all your directories. It uses the shell function
@@ -2036,11 +2109,12 @@ function main() {
   #  Task_1_checkpath:     load file system variables, to check them.
   #  Task_2_home_md:       apply sed to all Home.md files.
   #  Task_2_readme_md:     apply sed to all README.md files.
-  #  Task_3_repos:         show all repos.
-  #  Task_3_status:        apply git status to all repos.
-  #  Task_3_add:           apply git add . to all repos.
-  #  Task_3_commit:        apply git commit to all repos.
-  #  Task_3_push:          apply git push to all repos.
+  #  Task_3_git_repos:     show all repos.
+  #  Task_3_git_diff_head  show diffs between working directory and last commit
+  #  Task_3_git_status:    apply git status to all repos.
+  #  Task_3_git_add:       apply git add . to all repos.
+  #  Task_3_git_commit:    apply git commit to all repos.
+  #  Task_3_git_push:      apply git push to all repos.
   #  Task_4_git_all_steps: the same as Task_3_... but only one loop per repo.
   #
   # TODO: write your own tasks.
@@ -2093,8 +2167,8 @@ function main() {
     Task_2_home_md|t2_home_md|2_home_md)
       # Code 
       # a.) list of all Home.md files to which you will apply your script
-      local filelist_home_md="./*-loop.wiki/Home.md"
-      if ! check_filelist "$filelist_home_md"; then
+      local filelist_Home_md="./*-loop.wiki/Home.md"
+      if ! check_filelist "$filelist_Home_md"; then
         echo "exit: $LINENO"; exit 1
       fi
 
@@ -2139,11 +2213,11 @@ function main() {
       echo "--$LINENO separator: $sep";
       echo "--$LINENO appendurl: $appurl";
 
-      # c.) apply sed to filelist_home_md 
+      # c.) apply sed to filelist_Home_md 
       #     for each file change the diff will be printed
       #     after every diff there is a user interaction
       local dirbak_Home_md=./bak_Home_md/
-      if ! sed_in_files_md "$filelist_README_md" "$dirbak_Home_md" \
+      if ! sed_in_files_md "$filelist_Home_md" "$dirbak_Home_md" \
         "$rng" "$pat" "$searchpat" "$repl" "$opt" "$sep" \
         "$appurl"; then
         echo "exit: $LINENO"; exit 1 
@@ -2280,7 +2354,7 @@ function main() {
       # answer is passed as a reference not a value! $answer won't work out
       local answer="the answer will be stored here"
       echo "--------------------------------------------------------------"
-      echo "would you like to move on to Task_3_git_status?"
+      echo "would you like to move on to Task_3_git_diff_HEAD?"
       if ! ask_user 'Task_3_git_status' "$LINENO" answer; then
         echo "exit: $LINENO"; exit 1 
       fi
@@ -2294,11 +2368,51 @@ function main() {
       
       # and leave (;;)  or  move on (;&) 
       ;&
+
+    #doc_begin_main----------Task_3_git_status---------------------------------
+    # -------------------------------------------------------------------------
+    # Task_3_git_diff_HEAD: 
+    #   apply git diff HEAD to all repos
+    # -------------------------------------------------------------------------
+    #doc_end_main--------------------------------------------------------------
+    Task_3_git_diff_head|t3_git_diff_head|3_gdh)
+      # Code
+      
+      # list of all directories to which you will apply your script
+      local pwd_script
+      pwd_script="$(pwd)"
+      local directorylist="./*-loop*/"
+      
+      # check status
+      if ! git_diff_head_dirlist "$directorylist" "$pwd_script"; then
+        echo "exit: $LINENO"; exit 1 
+      fi
+
+      # user interaction: 
+      # if the function returns 1, do exit function with return 1
+      # if user answer a, c, b, t act accordingly
+      # answer is passed as a reference not a value! $answer won't work out
+      local answer="the answer will be stored here"
+      echo "--------------------------------------------------------------"
+      echo "would you like to move on to Task_3_git_status?"
+      if ! ask_user 'Task_3_git_add' "$LINENO" answer; then
+        echo "exit: $LINENO"; exit 1; 
+      fi
+      if [[ "$answer" == "a" ]]; then echo "OK, go to task"
+      elif [[ "$answer" == "c" ]]; then echo "no loop, go to task"
+      elif [[ "$answer" == "b" ]]; then echo "no loop, go to task"
+      elif [[ "$answer" == "t" ]]; then echo "terminate script"; exit 1
+      else echo "$LINENO : something went wrong"
+      fi
+      echo "--------------------------------------------------------------"
+
+      # and  leave (;;)  or  move on (;&)
+      ;&
  
     #doc_begin_main----------Task_3_git_status---------------------------------
     # -------------------------------------------------------------------------
     # Task_3_git_status: 
-    #   apply git add . to all repos
+    #   apply git status to all repos
     # -------------------------------------------------------------------------
     #doc_end_main--------------------------------------------------------------
     Task_3_git_status|t3_git_status|3_gs)

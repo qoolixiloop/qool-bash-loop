@@ -32,10 +32,14 @@ https://github.com/qoolixiloop/qool-linux-loop/wiki/bash-script-with-grep-to-lea
 https://github.com/qoolixiloop/qool-linux-loop/wiki/cut-in-a-nutshell
 );  declare -p URL_ARRAY
 
-# start loop over url array
+
+# -----------------------------------------------------------------------------
+
+# start loop over url array (README.md)
 for url in "${URL_ARRAY[@]}"; do
 
   # user interaction
+  echo $'BashRun_sed_and_git_to_all\nloop over url array\nREADME.md'
   echo "new url: $url"
   echo "go on? type: y"
   read -r answer
@@ -48,9 +52,38 @@ for url in "${URL_ARRAY[@]}"; do
   else
 
   # call the script
+  echo "call ./Bash_sed_and_git_to_all.sh -t Task_2_README_md --cmd a_url"
   DEBUG="y" APPENDURL="$url" \
     ./Bash_sed_and_git_to_all.sh \
     --task Task_2_readme_md \
+    --cmd a_url
+
+  fi
+done
+
+# -----------------------------------------------------------------------------
+
+# start loop over url array (HOME.md)
+for url in "${URL_ARRAY[@]}"; do
+
+  # user interaction
+  echo $'BashRun_sed_and_git_to_all\nloop over array\nHome.md'
+  echo "new search: $url"
+  echo "go on? type: y"
+  read -r answer
+
+  if [[ "$answer" != "y" ]]; then
+
+    echo "bye"
+    break
+
+  else
+
+  # call the script for Home.md
+  echo "call ./Bash_sed_and_git_to_all.sh --t Task_2_home_md --cmd q_url"
+  DEBUG="y" APPENDURL="$url" \
+    ./Bash_sed_and_git_to_all.sh \
+    --task Task_2_home_md \
     --cmd a_url
 
   fi
@@ -83,6 +116,7 @@ done
 #   $7, $OPTIONS   : option e.g. g, gc, p, d, a, i
 #   $8, $SEPARATOR : separator (if you have many backslashes use e.g | or #)
 # Escape:
+# ( the list is most certainly not 100% complete, but shows most cases)
 #  "      : used to build the command string -> must be escaped everywhere
 #  /      : used to separate command strings -> must be escaped everywhere
 #         : or use $8 to define a new separator, e.g. | or #
@@ -91,6 +125,8 @@ done
 #         : any symbol can be escaped, whether necessary or not
 #  \\     : to escape an escape
 #  \\\    : if you have a literal separator
+#  [      : even inside of groups ( \[  ] ) it has to be escaped, if meaning 
+#         : is literal. Otherwise it is parsed as a class.
 #  &      : used in the replacement to include the match into the replacement
 #         : -> escape it in the replacement if literal meaning is wanted
 #  in $4  : regex! any symbol must be escaped if literal meaning is wanted
@@ -100,10 +136,10 @@ done
 #  in $6  : text!
 # ---------------------------------------------------------------------------
 
-# SEARCH: search pattern (REGEX, literal meaning within group () )
+# SEARCH: search pattern (REGEX, literal meaning within group () ), exept for [
 SEARCH_ARRAY=(
-'([302]: https://github.com/qoolixiloop/qool-awk-loop/ \"wikiqool-awk-loop.wiki\")'
-'([402]: https://github.com/qoolixiloop/qool-bash-loop/ \"wikiqool-bash-loop.wiki\")'
+'(\[302]: https://github.com/qoolixiloop/qool-awk-loop/ \"wikiqool-awk-loop.wiki\")'
+'(\[402]: https://github.com/qoolixiloop/qool-bash-loop/ \"wikiqool-bash-loop.wiki\")'
 );  declare -p SEARCH_ARRAY
 
 
@@ -113,6 +149,9 @@ REPLACE_ARRAY=(
 '[402]: https://github.com/qoolixiloop/qool-bash-loop/wiki \"wikiqool-bash-loop.wiki\"'
 );  declare -p REPLACE_ARRAY
 
+
+# -----------------------------------------------------------------------------
+
 # get the array size (number of elements)
 array_size="${#SEARCH_ARRAY[@]}"
 echo "array_size: $array_size"
@@ -120,7 +159,8 @@ echo "array_size: $array_size"
 # array indexes start at 0
 index=0
 
-# start loop over search array (use < sign not <= )
+# start loop over search array (README.md)
+# (use < sign not <= )
 while [[ "$index" < "$array_size" ]]; do
 
   #assign values
@@ -130,6 +170,8 @@ while [[ "$index" < "$array_size" ]]; do
   echo "replace: $replace"
 
   # user interaction
+  echo $'BashRun_sed_and_git_to_all\nloop over SEARCH and REPLACE
+  arrays\nREADME.md'
   echo "new search: $search"
   echo "go on? type: y"
   read -r answer
@@ -142,12 +184,51 @@ while [[ "$index" < "$array_size" ]]; do
   else
 
   # call the script README.md
+  echo "call ./Bash_sed_and_git_to_all.sh -t Task_2_readme_md --cmd a_url"
   DEBUG="y" SEARCH="$search" REPLACE="$replace" SEPARATOR="|" \
     ./Bash_sed_and_git_to_all.sh \
     --task Task_2_readme_md \
     --cmd sr
 
+  fi
+  
+  # increment index ( no $ sign within (()) )
+  (( index++  ))
+
+done
+
+
+# -----------------------------------------------------------------------------
+
+# array indexes start at 0
+index=0
+
+# start loop over search array (Home.md)
+# (use < sign not <= )
+while [[ "$index" < "$array_size" ]]; do
+
+  #assign values
+  search="${SEARCH_ARRAY[index]}"
+  replace="${REPLACE_ARRAY[index]}"
+  echo "search: $search"
+  echo "replace: $replace"
+
+  # user interaction
+  echo $'BashRun_sed_and_git_to_all\nloop over SEARCH and REPLACE
+  array\nHome.md'
+  echo "new search: $search"
+  echo "go on? type: y"
+  read -r answer
+
+  if [[ "$answer" != "y" ]]; then
+
+    echo "bye"
+    break
+
+  else
+
   # call the script for Home.md
+  echo "call ./Bash_sed_and_git_to_all.sh --t Task_2_home_md --cmd sr"
   DEBUG="y" SEARCH="$search" REPLACE="$replace" SEPARATOR="|" \
     ./Bash_sed_and_git_to_all.sh \
     --task Task_2_home_md \
