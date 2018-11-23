@@ -30,75 +30,65 @@ silent! normal! zE
 585,622fold
 623,628fold
 632,655fold
-667,682fold
-683,724fold
-730,742fold
-743,765fold
-771,783fold
-784,811fold
-817,921fold
-922,1039fold
-1045,1095fold
-1096,1384fold
-1389,1404fold
-1405,1454fold
-1459,1474fold
-1475,1523fold
-1529,1545fold
-1546,1595fold
-1601,1616fold
-1617,1665fold
-1671,1701fold
-1702,1820fold
-1826,1843fold
-1844,1858fold
-1859,1863fold
-1864,1884fold
-1887,1892fold
-1894,1917fold
-1919,1925fold
-1927,1985fold
-1987,1993fold
-1995,2053fold
-2055,2061fold
-2063,2092fold
-2094,2100fold
-2102,2132fold
-2134,2140fold
-2142,2172fold
-2174,2180fold
-2182,2215fold
-2217,2223fold
-2225,2239fold
-2241,2247fold
-2249,2267fold
-2270,2273fold
-2270,2274fold
-2283,2308fold
-2309,2335fold
-2336,2343fold
-16
+666,681fold
+682,723fold
+729,741fold
+742,764fold
+770,782fold
+783,810fold
+816,920fold
+921,1052fold
+1058,1108fold
+1109,1397fold
+1401,1437fold
+1438,1552fold
+1556,1571fold
+1572,1621fold
+1626,1641fold
+1642,1690fold
+1696,1712fold
+1713,1762fold
+1768,1783fold
+1784,1832fold
+1838,1868fold
+1869,1987fold
+1993,2010fold
+2011,2025fold
+2026,2030fold
+2031,2051fold
+2054,2059fold
+2061,2084fold
+2086,2092fold
+2094,2170fold
+2172,2178fold
+2180,2256fold
+2258,2264fold
+2266,2295fold
+2297,2303fold
+2305,2335fold
+2337,2343fold
+2345,2375fold
+2377,2383fold
+2385,2418fold
+2420,2426fold
+2428,2442fold
+2444,2450fold
+2452,2470fold
+2473,2476fold
+2473,2477fold
+2486,2511fold
+2512,2538fold
+2539,2546fold
+921
 normal! zo
-297
+1438
 normal! zo
-817
-normal! zo
-922
-normal! zo
-1045
-normal! zo
-1826
-normal! zo
-1927
-normal! zo
-1995
-normal! zo
-let s:l = 32 - ((30 * winheight(0) + 16) / 33)
+let s:l = 1004 - ((11 * winheight(0) + 16) / 33)
 if s:l < 1 | let s:l = 1 | endif
 exe s:l
 normal! zt
-32
-normal! 074|
+1004
+normal! 012|
 let &so = s:so_save | let &siso = s:siso_save
 doautoall SessionLoadPost
 " vim: set ft=vim :

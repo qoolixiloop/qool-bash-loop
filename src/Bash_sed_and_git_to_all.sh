@@ -468,7 +468,7 @@ ask_user() {
   echo; echo "$2" "$1" 
 
   # print instructions
-  echo " apply (a), skip loop (c), skip function (b), terminate script (t)?"
+  echo "apply (a), cont. with next in loop (c), break loop (b), terminate (t)?"
 
   # wait for, read and store user input into
   local ANSWER
@@ -523,7 +523,7 @@ ask_user() {
         return
         ;;
       *) echo \
-        "apply (a), skip loop (c), skip function (b), terminate script (t)?"
+        "apply (a), cont with next in loop (c), break loop (b), terminate (t)?"
         ;;
     esac
   done
@@ -656,7 +656,6 @@ script_sourced_or_executed() {
 
 # ** GLOBAL VARIABLES **
 # -----------------------------------------------------------------------------
-
 
 
 # ** FUNCTIONS **
@@ -921,13 +920,23 @@ sed_in_files_md() {
   #============================================================================
 
   # input arguments
-  local filelist=$1
-  local dirbak=$2  #backup folder
-  local searchpattern=$3
-  local replacement=$4
-  local appendurl=$5
-  echo; echo "--$LINENO search pattern: $searchpattern"
-  echo "--$LINENO replacement: $replacement";
+  local filelist="$1"
+  local dirbak="$2"  #backup folder
+  local range="$3"
+  local pattern="$4"
+  local search="$5"
+  local replace="$6"
+  local options="$7"
+  local sep="$8"
+  local appendurl="$9"
+  echo; echo "--$LINENO filelist: $filelist"
+  echo "--$LINENO dirbak: $dirbak";
+  echo "--$LINENO range: $range";
+  echo "--$LINENO pattern: $pattern";
+  echo "--$LINENO search: $search";
+  echo "--$LINENO replace: $replace";
+  echo "--$LINENO options: $options";
+  echo "--$LINENO separator: $sep";
   echo "--$LINENO appendurl: $appendurl";
 
 
@@ -963,7 +972,7 @@ sed_in_files_md() {
       if [[ "$answer" == "a" ]]; then echo "apply to this file"
       elif [[ "$answer" == "c" ]]; then echo "cont. with next file"; continue
       elif [[ "$answer" == "b" ]]; then echo "break this loop"; break
-      elif [[ "$answer" == "t" ]]; then echo "terminate script"; return 1
+      elif [[ "$answer" == "t" ]]; then echo "terminate function"; return 1
       else echo "$LINENO : something went wrong"
       fi
       echo "--------------------------------------------------------------"
@@ -989,14 +998,18 @@ sed_in_files_md() {
       case "$TASK_2_COMMAND" in 
         sr)
           echo "sed_in_files_md() case: sr"
-          # apply sed substitution to $file to whole line (g)
-          # avoid inline editing by writing into $filetmp
-          sed "s/$searchpattern/$replacement/g" "$file" > "$filetmp" \
-            && mv "$filetmp" "$file"
+          if ! sed_search_replace "$file" "$filetmp" \
+            "$range" "$pattern" "$search" "$replace" "$option" "$sep"; then
+            /bin/rm -v -i $filetmp || true
+            echo "exit: $LINENO"; return 1; 
+          fi
           ;;
         a_url)
           echo "sed_in_files_md() case: a_url"
-          sed_append_url "$file" "$filetmp" "$appendurl"
+          if ! sed_append_url "$file" "$filetmp" "$appendurl"; then
+            /bin/rm -v -i $filetmp || true
+            echo "exit: $LINENO"; return 1; 
+          fi
           ;;
         a)
           echo "sed_in_files_md() case: a: not yet implemented"
@@ -1041,8 +1054,8 @@ sed_in_files_md() {
 # -----------------------------------------------------------------------------
 
 
-sed_append_url(){
-  
+sed_append_url() {
+   
   #============================================================================
   #doc_begin-------------------------------------------------------------------
   # ---------------------------------------------------------------------------
@@ -1384,6 +1397,160 @@ sed_append_url(){
 }
 # -----------------------------------------------------------------------------
 
+sed_search_replace() {
+   
+  #============================================================================
+  #doc_begin; help_begin-------------------------------------------------------
+  # ---------------------------------------------------------------------------
+  # sed_search_replace(): For Task II: 
+  # Purpose: 
+  #   A wrapper to perform a search and replace with SED. 
+  # Arguments:
+  #   $1             : filename of the file to change
+  #   $2             : a temporary file $filetmp to avoid the SED -i option
+  #   $3, $RANGE     : the range of lines N,M or just one line M to apply SED
+  #   $4, $PATTERN   : pattern to find lines
+  #   $5, $SEARCH    : if pattern is given search only within those lines
+  #   $6, $REPLACE   : replace what is matched by search
+  #   $7, $OPTIONS   : option e.g. g, gc, p, d, a, i
+  #   $8, $SEPARATOR : separator (if you have many backslashes use e.g | or #)
+  # Escape:
+  #  "      : used to build the command string -> must be escaped everywhere
+  #  /      : used to separate command strings -> must be escaped everywhere
+  #         : or use $8 to define a new separator, e.g. | or #
+  #  '      : must not be escaped
+  #  \      : ignored if not necessary, except before a separator, () or []
+  #         : any symbol can be escaped, whether necessary or not
+  #  \\     : to escape an escape
+  #  \\\    : if you have a literal separator
+  #  &      : used in the replacement to include the match into the replacement
+  #         : -> escape it in the replacement if literal meaning is wanted
+  #  in $4  : regex! any symbol must be escaped if literal meaning is wanted
+  #         : exception within () and []
+  #  in $5  : regex! any symbol must be escaped if literal meaning is wanted
+  #         : exception within () and []
+  #  in $6  : text!
+  # ---------------------------------------------------------------------------
+  #doc_end; help_end-----------------------------------------------------------
+  [[ $DEBUG == 'y' ]] && echo "--$LINENO ${BASH_SOURCE[0]}:sed_search_replace()"
+  # ---------------------------------------------------------------------------
+  #============================================================================
+
+  echo "entering sed_append_url()"
+
+  local file="$1"
+  local filetmp="$2"
+  local range="$3"
+  local pattern="$4"
+  local search="$5"
+  local replace="$6"
+  local option="$7"
+  local sep="$8"
+
+  echo "file: $file"
+  echo "filetmp: $filetmp"
+  echo "range: $range"
+  echo "pattern: $pattern"
+  echo "search: $search"
+  echo "replace: $replace"
+  echo "option: $option"
+  echo "separator: $sep"
+
+  local cmd
+  # Input: all variables
+  if [[ -n "$range" ]] && [[ -n "$pattern" ]] && [[ -n "$search" ]] \
+    && [[ -n "$replace" ]] && [[ -n "$option"  ]]; then
+
+    if [[ -n "$sep"  ]]; then
+      cmd="${range}{s${sep}${pattern}${sep}${search}${sep}${replace}${sep}{$option}}"
+    else
+      cmd="$range{s/$pattern/$search/$replace/{$option}}"
+    fi
+
+    echo "cmd: $cmd"
+
+  # Input: no options
+  elif [[ -n "$range" ]] && [[ -n "$pattern" ]] \
+    && [[ -n "$search" ]] && [[ -n "$replace" ]]; then
+
+    if [[ -n "$sep"  ]]; then
+      cmd="$range{s${sep}${pattern}${sep}${search}${sep}${replace}${sep}g}"
+    else
+      cmd="$range{s/$pattern/$search/$replace/g}"
+    fi
+
+    echo "cmd: $cmd"
+
+  # Input no pattern, no options
+  elif [[ -n "$range" ]] && [[ -n "$search" ]] && [[ -n "$replace" ]]; then
+  
+    if [[ -n "$sep"  ]]; then
+      cmd="$range{s${sep}${search}${sep}${replace}${sep}g}"
+    else
+      cmd="$range{s/$search/$replace/g}"
+    fi
+  
+    echo "cmd: $cmd"
+
+  # Input no range, no options
+  elif [[ -n "$pattern" ]] && [[ -n "$search" ]] && [[ -n "$replace" ]]; then
+
+  if [[ -n "$sep"  ]]; then
+    cmd="s${sep}${pattern}${sep}${search}${sep}${replace}${sep}g"
+  else
+    cmd="s/$pattern/$search/$replace/g}"
+  fi
+
+  echo "cmd: $cmd"
+
+  # Input just search, replace
+  elif [[ -n "$search" ]] && [[ -n "$replace" ]]; then
+    
+    if [[ -n "$sep"  ]]; then
+      cmd="s${sep}${search}${sep}${replace}${sep}g}"
+    else
+      cmd="s/$search/$replace/g}"
+    fi
+    
+    echo "cmd: $cmd"
+
+  else
+
+    echo "something went wrong"
+    return 1
+
+  fi
+
+  # user interaction: 
+  # if the function returns 1, do exit function with return 1
+  # if user answer a, c, b, t act accordingly
+  # answer is passed as a reference not a value! $answer won't work out
+  local answer="the answer will be stored here"
+  echo "--------------------------------------------------------------"
+  echo $'do you want to apply this command?\n$cmd'
+  if ! ask_user 'next_sed' "$LINENO" answer; then
+    echo "exit: $LINENO"; return 1; 
+  fi
+  if [[ "$answer" == "a" ]]; then echo "apply to this file"
+  elif [[ "$answer" == "c" ]]; then echo "no loop, return"; return
+  elif [[ "$answer" == "b" ]]; then echo "no loop, return"; return
+  elif [[ "$answer" == "t" ]]; then echo "terminate function"; return 1
+  else echo "$LINENO : something went wrong"
+  fi
+  echo "--------------------------------------------------------------"
+
+  # apply sed substitution to $file to whole line (g)
+  # avoid inline editing by writing into $filetmp
+  sed -E "$cmd" "$file" > "$filetmp"
+  
+  #DIFF: show differences before and after
+  diff "$file" "$filetmp"
+
+  #MV: move/ overwrite $file with $filetmp
+  mv "$filetmp" "$file"
+
+}
+# -----------------------------------------------------------------------------
 
 git_status_dirlist() {
 
@@ -1427,7 +1594,7 @@ git_status_dirlist() {
     if [[ "$answer" == "a" ]]; then echo "apply to this file"
     elif [[ "$answer" == "c" ]]; then echo "cont. with next file"; continue
     elif [[ "$answer" == "b" ]]; then echo "break this loop"; break
-    elif [[ "$answer" == "t" ]]; then echo "terminate script"; return 1
+    elif [[ "$answer" == "t" ]]; then echo "terminate function"; return 1
     else echo "$LINENO : something went wrong"
     fi
     echo "--------------------------------------------------------------"
@@ -1497,7 +1664,7 @@ git_add_dirlist() {
     if [[ "$answer" == "a" ]]; then echo "apply to this file"
     elif [[ "$answer" == "c" ]]; then echo "cont. with next file"; continue
     elif [[ "$answer" == "b" ]]; then echo "break this loop"; break
-    elif [[ "$answer" == "t" ]]; then echo "terminate script"; return 1
+    elif [[ "$answer" == "t" ]]; then echo "terminate function"; return 1
     else echo "$LINENO : something went wrong"
     fi
     echo "--------------------------------------------------------------"
@@ -1569,7 +1736,7 @@ git_commit_dirlist(){
     if [[ "$answer" == "a" ]]; then echo "apply to this file"
     elif [[ "$answer" == "c" ]]; then echo "cont. with next file"; continue
     elif [[ "$answer" == "b" ]]; then echo "break this loop"; break
-    elif [[ "$answer" == "t" ]]; then echo "terminate script"; return 1
+    elif [[ "$answer" == "t" ]]; then echo "terminate function"; return 1
     else echo "$LINENO : something went wrong"
     fi
     echo "--------------------------------------------------------------"
@@ -1639,7 +1806,7 @@ git_push_dirlist(){
     if [[ "$answer" == "a" ]]; then echo "apply to this file"
     elif [[ "$answer" == "c" ]]; then echo "cont. with next file"; continue
     elif [[ "$answer" == "b" ]]; then echo "break this loop"; break
-    elif [[ "$answer" == "t" ]]; then echo "terminate script"; return 1
+    elif [[ "$answer" == "t" ]]; then echo "terminate function"; return 1
     else echo "$LINENO : something went wrong"
     fi
     echo "--------------------------------------------------------------"
@@ -1738,7 +1905,7 @@ git_all_steps_dirlist() {
     if [[ "$answer" == "a" ]]; then echo "apply to this file"
     elif [[ "$answer" == "c" ]]; then echo "cont. with next file"; continue
     elif [[ "$answer" == "b" ]]; then echo "break this loop"; break
-    elif [[ "$answer" == "t" ]]; then echo "terminate script"; return 1
+    elif [[ "$answer" == "t" ]]; then echo "terminate function"; return 1
     else echo "$LINENO : something went wrong"
     fi
     echo "--------------------------------------------------------------"
@@ -1759,7 +1926,7 @@ git_all_steps_dirlist() {
     if [[ "$answer" == "a" ]]; then echo "apply to this file"
     elif [[ "$answer" == "c" ]]; then echo "cont. with next file"; continue
     elif [[ "$answer" == "b" ]]; then echo "break this loop"; break
-    elif [[ "$answer" == "t" ]]; then echo "terminate script"; return 1
+    elif [[ "$answer" == "t" ]]; then echo "terminate function"; return 1
     else echo "$LINENO : something went wrong"
     fi
     echo "--------------------------------------------------------------"
@@ -1780,7 +1947,7 @@ git_all_steps_dirlist() {
     if [[ "$answer" == "a" ]]; then echo "apply to this file"
     elif [[ "$answer" == "c" ]]; then echo "cont. with next file"; continue
     elif [[ "$answer" == "b" ]]; then echo "break this loop"; break
-    elif [[ "$answer" == "t" ]]; then echo "terminate script"; return 1
+    elif [[ "$answer" == "t" ]]; then echo "terminate function"; return 1
     else echo "$LINENO : something went wrong"
     fi
     echo "--------------------------------------------------------------"
@@ -1801,7 +1968,7 @@ git_all_steps_dirlist() {
     if [[ "$answer" == "a" ]]; then echo "apply to this file"
     elif [[ "$answer" == "c" ]]; then echo "cont. with next file"; continue
     elif [[ "$answer" == "b" ]]; then echo "break this loop"; break
-    elif [[ "$answer" == "t" ]]; then echo "terminate script"; return 1
+    elif [[ "$answer" == "t" ]]; then echo "terminate function"; return 1
     else echo "$LINENO : something went wrong"
     fi
     echo "--------------------------------------------------------------"
@@ -1937,7 +2104,7 @@ function main() {
       # answer is passed as a reference not a value! $answer won't work out
       local answer="the answer will be stored here"
       echo "--------------------------------------------------------------"
-      echo "would you like to search for $SEARCH and replace with $REPLACE?"
+      echo "would you like to go on?"
       if ! ask_user 'Task_2_home_md' "$LINENO" answer; then
         echo "exit: $LINENO"; exit 1 
       fi
@@ -1949,19 +2116,37 @@ function main() {
       fi
       echo "--------------------------------------------------------------"
       
-      # b.) add the command line variables TODO:
-      local searchpattern="$SEARCH"
-      local replacement="$REPLACE"
-      local appendurl="$APPEND_URL"
+      # b.) give in the two variables TODO:
+      #shellcheck disable=2153
+      local rng="$RANGE"
+      #shellcheck disable=2153
+      local pat="$PATTERN"
+      #shellcheck disable=2153
+      local searchpat="$SEARCH"
+      #shellcheck disable=2153
+      local repl="$REPLACE"
+      #shellcheck disable=2153
+      local opt="$OPTIONS"
+      #shellcheck disable=2153
+      local sep="$SEPARATOR"
+      #shellcheck disable=2153
+      local appurl="$APPENDURL"
+      echo "--$LINENO range: $rng";
+      echo "--$LINENO pattern: $pat";
+      echo "--$LINENO search: $searchpat";
+      echo "--$LINENO replace: $repl";
+      echo "--$LINENO options: $opt";
+      echo "--$LINENO separator: $sep";
+      echo "--$LINENO appendurl: $appurl";
 
-      # c.) apply sed to $filelist_home_md
+      # c.) apply sed to filelist_home_md 
       #     for each file change the diff will be printed
       #     after every diff there is a user interaction
       local dirbak_Home_md=./bak_Home_md/
-      if ! sed_in_files_md "$filelist_home_md" "$dirbak_Home_md"
-        "$searchpattern" "$replacement" \
-        "$appendurl"; then
-        echo "exit: $LINENO"; exit 1
+      if ! sed_in_files_md "$filelist_README_md" "$dirbak_Home_md" \
+        "$rng" "$pat" "$searchpat" "$repl" "$opt" "$sep" \
+        "$appurl"; then
+        echo "exit: $LINENO"; exit 1 
       fi
 
       # user interaction: 
@@ -1992,7 +2177,7 @@ function main() {
     # -------------------------------------------------------------------------
     #doc_end_main--------------------------------------------------------------
     Task_2_readme_md|t2_readme_md|2_readme_md)
-      # Code
+      # Code 
       # a.) list of all README.md files to which you will apply your script
       local filelist_README_md="./*-loop/README.md"
       if ! check_filelist "$filelist_README_md"; then
@@ -2005,7 +2190,7 @@ function main() {
       # answer is passed as a reference not a value! $answer won't work out
       local answer="the answer will be stored here"
       echo "--------------------------------------------------------------"
-      echo "would you like to search for $SEARCH and replace with $REPLACE?"
+      echo "would you like to go on?"
       if ! ask_user 'Task_2_readme_md' "$LINENO" answer; then
         echo "exit: $LINENO"; exit 1
       fi
@@ -2018,17 +2203,35 @@ function main() {
       echo "--------------------------------------------------------------"
 
       # b.) give in the two variables TODO:
-      local searchpattern="$SEARCH"
-      local replacement="$REPLACE"
-      local appendurl="$APPEND_URL"
+      #shellcheck disable=2153
+      local rng="$RANGE"
+      #shellcheck disable=2153
+      local pat="$PATTERN"
+      #shellcheck disable=2153
+      local searchpat="$SEARCH"
+      #shellcheck disable=2153
+      local repl="$REPLACE"
+      #shellcheck disable=2153
+      local opt="$OPTIONS"
+      #shellcheck disable=2153
+      local sep="$SEPARATOR"
+      #shellcheck disable=2153
+      local appurl="$APPENDURL"
+      echo "--$LINENO range: $rng";
+      echo "--$LINENO pattern: $pat";
+      echo "--$LINENO search: $searchpat";
+      echo "--$LINENO replace: $repl";
+      echo "--$LINENO options: $opt";
+      echo "--$LINENO separator: $sep";
+      echo "--$LINENO appendurl: $appurl";
 
       # c.) apply sed to filelist_README_md 
       #     for each file change the diff will be printed
       #     after every diff there is a user interaction
       local dirbak_README_md=./bak_README_md/
-      if ! sed_in_files_md "$filelist_README_md" "$dirbak_README_md"
-        "$searchpattern" "$replacement" \
-        "$appendurl"; then
+      if ! sed_in_files_md "$filelist_README_md" "$dirbak_README_md" \
+        "$rng" "$pat" "$searchpat" "$repl" "$opt" "$sep" \
+        "$appurl"; then
         echo "exit: $LINENO"; exit 1 
       fi
 
