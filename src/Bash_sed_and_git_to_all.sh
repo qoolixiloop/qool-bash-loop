@@ -465,7 +465,8 @@ ask_user() {
   local __in_out="$3"
 
   # print line number and name of the next code block
-  echo; echo "$2" "$1" 
+  echo; echo "line number: $2"  
+  echo "message: $1" 
 
   # print instructions
   echo "apply (a), cont. with next in loop (c), break loop (b), terminate (t)?"
@@ -478,7 +479,7 @@ ask_user() {
   while true; do
     read -r ANSWER
     case "$ANSWER" in
-      a) echo "a"
+      a) echo "you entered: a"
         #return C Style with eval
         if [[ "$__in_out" ]]; then
           #shellcheck disable=2086
@@ -489,7 +490,7 @@ ask_user() {
         fi
         return
         ;;
-      c) echo "c"
+      c) echo "you entered: c"
         #return C Style with eval
         if [[ "$__in_out" ]]; then
           #shellcheck disable=2086
@@ -500,7 +501,7 @@ ask_user() {
         fi
         return
         ;;
-      b) echo "b"
+      b) echo "you entered: b"
         #return C Style with eval
         if [[ "$__in_out" ]]; then
           #shellcheck disable=2086
@@ -511,7 +512,7 @@ ask_user() {
         fi
         return
         ;;
-      t) echo "t"
+      t) echo "you entered: t"
         #return C Style with eval
         if [[ "$__in_out" ]]; then
           #shellcheck disable=2086
@@ -1944,18 +1945,32 @@ git_all_steps_dirlist() {
   local dirlist="$1"
   local pwd_script="$2"
   local message="$3"
-  echo "$message"
+  echo "--------------------------------------------------------------"
+  echo "enter function: git_all_steps_dirlist()"
+  echo "message: $message"
+  echo "--------------------------------------------------------------"
+
   # loop through directory list
   for directory in $dirlist; do
-
-    # if $directory exists (-e) go on
-    # otherwise continue with next directory in $dirlist
-    [ -e "$directory" ] || continue
-
-    # move to local repository, or if it fails
-    # return 1 to indicate that the script shall terminate
-    cd "$directory"  || return 1
     
+    # 1.) move to local script path, or if it fails
+    # return 1 to indicate that the script shall terminate
+    if ! cd "$pwd_script"; then
+      echo "couldn't cd to pwd_script"; return 1
+    fi
+
+    # 2.) if $directory exists (-e) go on
+    # otherwise continue with next directory in $dirlist
+    if ! [ -e "$directory" ]; then
+      echo "dir doesn't exist, go to next"; continue
+    fi
+
+    # 3.) move to local repository, or if it fails
+    # return 1 to indicate that the script shall terminate
+    if ! cd "$directory"; then
+      echo "couldn' change directory"; return 1
+    fi
+
     # carry out all steps:
     # show status
     # add changes and new files to local stash
@@ -1971,20 +1986,24 @@ git_all_steps_dirlist() {
     # answer is passed as a reference not a value! $answer won't work out
     local answer="the answer will be stored here"
     echo "--------------------------------------------------------------"
-    echo "apply git status to repository: $directory"
+    echo ">> Q: apply git status to repository: $directory ?"
     if ! ask_user 'git_status' "$LINENO" answer; then
-      echo "exit: $LINENO"; return 1; 
+      echo "exit: $LINENO"; return 1
     fi
-    if [[ "$answer" == "a" ]]; then echo "apply to this file"
-    elif [[ "$answer" == "c" ]]; then echo "cont. with next file"; continue
-    elif [[ "$answer" == "b" ]]; then echo "break this loop"; break
-    elif [[ "$answer" == "t" ]]; then echo "terminate function"; return 1
+    if [[ "$answer" == "a" ]]; then echo ">> Ok, apply to this repo"
+    elif [[ "$answer" == "c" ]]; then echo ">> cont. with next repo"; continue
+    elif [[ "$answer" == "b" ]]; then echo ">> break this loop"; break
+    elif [[ "$answer" == "t" ]]; then echo ">> terminate function"; return 1
     else echo "$LINENO : something went wrong"
     fi
     echo "--------------------------------------------------------------"
     
     # show git status
+    echo "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
+    echo "$directory"
+    echo "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
     /usr/bin/git status
+    echo "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
     
     # user interaction: 
     # if the function returns 1, do exit function with return 1
@@ -1992,20 +2011,24 @@ git_all_steps_dirlist() {
     # answer is passed as a reference not a value! $answer won't work out
     local answer="the answer will be stored here"
     echo "--------------------------------------------------------------"
-    echo "apply git add . to repository: $directory"
+    echo ">> Q: apply git add . to repository: $directory ?"
     if ! ask_user 'git_add_.' "$LINENO" answer; then
-      echo "exit: $LINENO"; return 1; 
+      echo "exit: $LINENO"; return 1
     fi
-    if [[ "$answer" == "a" ]]; then echo "apply to this file"
-    elif [[ "$answer" == "c" ]]; then echo "cont. with next file"; continue
-    elif [[ "$answer" == "b" ]]; then echo "break this loop"; break
-    elif [[ "$answer" == "t" ]]; then echo "terminate function"; return 1
+    if [[ "$answer" == "a" ]]; then echo ">> Ok, apply to this repo"
+    elif [[ "$answer" == "c" ]]; then echo ">> cont. with next repo"; continue
+    elif [[ "$answer" == "b" ]]; then echo ">> break this loop"; break
+    elif [[ "$answer" == "t" ]]; then echo ">> terminate function"; return 1
     else echo "$LINENO : something went wrong"
     fi
     echo "--------------------------------------------------------------"
     
     # apply git add .
+    echo "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
+    echo "$directory"
+    echo "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
     /usr/bin/git add .
+    echo "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
     
     # user interaction: 
     # if the function returns 1, do exit function with return 1
@@ -2013,20 +2036,24 @@ git_all_steps_dirlist() {
     # answer is passed as a reference not a value! $answer won't work out
     local answer="the answer will be stored here"
     echo "--------------------------------------------------------------"
-    echo "apply git commit to repository: $directory"
+    echo ">> Q: apply git commit to repository: $directory ?"
     if ! ask_user 'git_commit' "$LINENO" answer; then
-      echo "exit: $LINENO"; return 1; 
+      echo "exit: $LINENO"; return 1
     fi
-    if [[ "$answer" == "a" ]]; then echo "apply to this file"
-    elif [[ "$answer" == "c" ]]; then echo "cont. with next file"; continue
-    elif [[ "$answer" == "b" ]]; then echo "break this loop"; break
-    elif [[ "$answer" == "t" ]]; then echo "terminate function"; return 1
+    if [[ "$answer" == "a" ]]; then echo ">> Ok, apply to this repo"
+    elif [[ "$answer" == "c" ]]; then echo ">> cont. with next repo"; continue
+    elif [[ "$answer" == "b" ]]; then echo ">> break this loop"; break
+    elif [[ "$answer" == "t" ]]; then echo ">> terminate function"; return 1
     else echo "$LINENO : something went wrong"
     fi
     echo "--------------------------------------------------------------"
     
     # apply git commit
+    echo "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
+    echo "$directory"
+    echo "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
     /usr/bin/git commit -m "$message"
+    echo "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
     
     # user interaction: 
     # if the function returns 1, do exit function with return 1
@@ -2034,28 +2061,29 @@ git_all_steps_dirlist() {
     # answer is passed as a reference not a value! $answer won't work out
     local answer="the answer will be stored here"
     echo "--------------------------------------------------------------"
-    echo "apply git push to repository: $directory"
+    echo ">> Q: apply git push to repository: $directory ?"
     if ! ask_user 'git_push' "$LINENO" answer; then
-      echo "exit: $LINENO"; return 1; 
+      echo "exit: $LINENO"; return 1 
     fi
-    if [[ "$answer" == "a" ]]; then echo "apply to this file"
-    elif [[ "$answer" == "c" ]]; then echo "cont. with next file"; continue
-    elif [[ "$answer" == "b" ]]; then echo "break this loop"; break
-    elif [[ "$answer" == "t" ]]; then echo "terminate function"; return 1
+    if [[ "$answer" == "a" ]]; then echo ">> Ok, apply to this repo"
+    elif [[ "$answer" == "c" ]]; then echo ">> cont. with next repo"; continue
+    elif [[ "$answer" == "b" ]]; then echo ">> break this loop"; break
+    elif [[ "$answer" == "t" ]]; then echo ">> terminate function"; return 1
     else echo "$LINENO : something went wrong"
     fi
     echo "--------------------------------------------------------------"
     
     # apply git push
+    echo "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
+    echo "$directory"
+    echo "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
     /usr/bin/git push
-
-    # move to local script path, or if it fails
-    # return 1 to indicate that the script shall terminate
-    cd "$pwd_script"  || return 1
+    echo "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
 
   done
   
   # return status of the last statement executed
+  echo "leaving function: git_all_steps_dirlist()" 
   return
   
 }
