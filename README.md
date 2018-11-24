@@ -111,8 +111,12 @@
 >
 > | What the link provides ('Ctrl-click' to open in new tab) | Link to website
 > |:---------------------------------------- | :----------------------------------------| 
+> | `relevant links to websites:`            |
 > | &&&         | [&&&][1]  
 > | &&&         | [&&&][2]  
+> | `relavant links to my wiki pages:`       |
+> | - (empty list)                           |
+> |                                          |
 >
 > 🌎
 > </details>
