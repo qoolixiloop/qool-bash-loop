@@ -1,4 +1,3 @@
-#!/bin/bash
 #shellcheck disable=SC2015
 
 # Script to run Task 2

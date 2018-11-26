@@ -10,34 +10,32 @@ setlocal fdn=20
 setlocal fen
 silent! normal! zE
 4,15fold
-58,58fold
 16,58fold
-61,73fold
+59,73fold
 76,90fold
-91,101fold
+91,102fold
 107,121fold
-122,145fold
+122,146fold
 151,182fold
-183,236fold
+183,237fold
 242,254fold
-255,262fold
+255,263fold
 268,296fold
-297,437fold
+297,438fold
 443,462fold
-463,535fold
+463,536fold
 541,569fold
-570,580fold
-586,623fold
-624,629fold
+570,581fold
+586,629fold
 633,656fold
 667,682fold
-683,724fold
+683,725fold
 730,742fold
-743,765fold
+743,766fold
 771,783fold
-784,811fold
+784,812fold
 817,921fold
-922,1053fold
+922,1054fold
 1059,1109fold
 1110,1398fold
 1402,1441fold
@@ -47,17 +45,16 @@ silent! normal! zE
 1630,1645fold
 1646,1695fold
 1700,1715fold
-1716,1764fold
+1716,1765fold
 1770,1786fold
-1787,1836fold
+1787,1837fold
 1842,1857fold
-1858,1906fold
+1858,1907fold
 1912,1942fold
-1943,2088fold
+1943,2089fold
 2094,2111fold
-2112,2126fold
-2127,2131fold
-2132,2153fold
+2112,2130fold
+2131,2154fold
 2156,2161fold
 2163,2186fold
 2188,2194fold
@@ -78,18 +75,14 @@ silent! normal! zE
 2570,2584fold
 2586,2592fold
 2594,2612fold
-2615,2618fold
 2615,2619fold
-2628,2653fold
-2654,2680fold
+2626,2680fold
 2681,2688fold
-1943
-normal! zo
-let s:l = 2094 - ((27 * winheight(0) + 16) / 33)
+let s:l = 1 - ((0 * winheight(0) + 21) / 42)
 if s:l < 1 | let s:l = 1 | endif
 exe s:l
 normal! zt
-2094
+1
 normal! 0
 let &so = s:so_save | let &siso = s:siso_save
 doautoall SessionLoadPost

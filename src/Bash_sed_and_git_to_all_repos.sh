@@ -238,7 +238,7 @@ generate_doc() { # called by the function doc()
 # -----------------------------------------------------------------------------
 
 
-ihelp() { # this function is calle from get_options()
+ihelp() { # this function is called from get_options()
 
   #============================================================================
   #doc_begin-------------------------------------------------------------------
@@ -642,7 +642,7 @@ script_sourced_or_executed() {
 #           load_file_vars():         generate filesystem related global vars
 #           check_filelist():         check the file list
 #           check_dirlist():          check the directory list
-#           sed_in_files_md():      make substituion
+#           sed_in_files_md():        make substituion
 #           git_status_dirlist():     apply git status to directory list
 #           git_add_dirlist():        apply git add . to directory list
 #           git_commit_dirlist():     apply git commit to directory list
@@ -679,7 +679,7 @@ load_file_vars() {
   #doc_end---------------------------------------------------------------------
   [[ $DEBUG == 'y' ]] && echo "--$LINENO ${BASH_SOURCE[0]}:load_file_vars()" 
   # ---------------------------------------------------------------------------
-  #=============================== ============================================
+  #===========================================================================
 
   echo "--------------------------------------------------------------"
   # running script: extract filename and path information
@@ -2087,7 +2087,7 @@ git_all_steps_dirlist() {
   return
   
 }
-
+# -----------------------------------------------------------------------------
 
 
 function main() {
