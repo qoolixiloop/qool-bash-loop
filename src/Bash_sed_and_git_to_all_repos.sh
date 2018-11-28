@@ -61,13 +61,14 @@
 #==============================================================================
 #doc_begin---------------------------------------------------------------------
 # -----------------------------------------------------------------------------
-# TODO: here is the place where you put you framework related functions
+# TODO: here is the place where you put the framework related functions
 #         1.) version():          to print version info 
 #         2.) doc():              to print documentation info
-#         3.) generate_doc()      to automatically parse the script with AWK
-#         4.) get_options():      to parse your script options
-#         5.) ask_user():         to navigate
-#         6.) script_sourced_executed(): debug info
+#         3.) ihelp()             to print available tasks and options
+#         4.) generate_doc()      to automatically parse the script with AWK
+#         5.) get_options():      to parse your script options
+#         6.) ask_user():         to navigate with user interaction
+#         7.) script_sourced_executed(): debug info
 # -----------------------------------------------------------------------------
 #doc_end-----------------------------------------------------------------------
 #==============================================================================
@@ -147,7 +148,7 @@ ____EOF
 # -----------------------------------------------------------------------------
 
 
-generate_doc() { # called by the function doc()
+generate_doc() { # called by the functions doc() and ihelp()
  
   #============================================================================
   #doc_begin-------------------------------------------------------------------
@@ -163,7 +164,7 @@ generate_doc() { # called by the function doc()
   #  following command line option:
   #    --doc   # this calls the function doc() which then calls this
   #              function.
-  #    --help  # this calls the function help() which then calls this
+  #    --help  # this calls the function ihelp() which then calls this
   #              function.
   #
   # How it works:
@@ -171,7 +172,7 @@ generate_doc() { # called by the function doc()
   #  each text, for which it finds the two markers doc._begin and doc._end
   #  for the doc() and the two markers help._begin and help._end for the help()
   #  (on a side note: the dot in (help._ instead of help_) is necessary so that 
-  #  the lines the line above and below is not printed by this function)
+  #  the line above and below is not printed by this function)
   #
   # TODO: set the markers "doc._begin", "doc._end", "help._begin", "help._end"
   #       for each text you would like to have printed
@@ -184,20 +185,21 @@ generate_doc() { # called by the function doc()
   # line 1: awk call
   # line 2-6: feed arguments into awk code
   # line 7: single quotes to start AWK program
-  # line 8-15: BEGIN block, do this before file is read
+  # line 8-15: BEGIN block, to do those tasks before the file is read
   # line 16-17: filters applied on every line in the files 
   #             (these take only bash variables or match() must be used.)
-  # line 18-24: BODY block, do this for every line in the file
-  # line 25-27: END block, do this after file is read
-  # line 28: single quote to end AWK program
-  #          and file name to which to apply the AWK program
+  # line 18-24: BODY block, to do those tasks for every line in the file
+  # line 25-27: END block, to do those task after the file is read
+  # line 28: single quote to end the AWK program
+  #          and the file name, to which to apply the AWK program
   # Remarks: 1. bash variable as well as command line variables can be 
   #             fed into AWK. 
-  #          2. use a backslash for at the end of each line for options
-  #          3. within the string use the backslash for special charcters
+  #          2. use a backslash at the end of each line for the options in
+  #             line 2-6
+  #          3. within a string use the backslash for special characters
   #          4. try to make one statement per line and end it with a
   #             semicolon. Backslash to cut a statement into two lines 
-  #             works, but bash sytax check might compain.
+  #             works, but bash sytax check might complain.
 
   date="11.Nov.2018"
   commandLineOption="$1"
@@ -282,7 +284,7 @@ get_options() { # this function is called from main()
   #     --doc:                    to print doc info (ex. for function call)
   #     --help:                   to print help info (ex. for function call)
   #     --verbose and --debug:    to print debug info (ex. for function call)
-  #     -t and --task             to start script at task a particular task
+  #     -t and --task             to start script at a particular task
   #     -o and --output-file      to set the outputfile (ex. for global variable)
   #     -o= and --output-file=    to set the outputfile (ex. for global variable)
   #                               (not implemented, just here as examples)
@@ -298,6 +300,7 @@ get_options() { # this function is called from main()
   # unset the varibles (in case they are loaded from somewhere)
   unset OUTPUTFILE
   unset DEBUG
+  unset START_AT_TASK
 
   # As long as there is at least one more argument, keep looping
   # -gt is used if string ($#) shall be interpreted as integer
@@ -309,7 +312,7 @@ get_options() { # this function is called from main()
     key="$1"
     case "$key" in
 
-      # This is a flag type option. Will catch either -f or --foo
+      # This is a flag type option. Will catch either -v or --version
       -v|--version)
 
       # call function to print version info
@@ -322,7 +325,7 @@ get_options() { # this function is called from main()
 
       ;;
 
-      # Also a flag type option. Will catch either -h or --help
+      # Also a flag type option. Will catch --help
       --help)
 
       # call function to print help info
@@ -334,7 +337,7 @@ get_options() { # this function is called from main()
       return 1
 
       ;;
-      # Also a flag type option. Will catch either -d or --doc
+      # Also a flag type option. Will catch --doc
       --doc)
 
       # call function to print doc info
@@ -362,7 +365,7 @@ get_options() { # this function is called from main()
       -t|--task)
 
       # Set global variable START_AT_TASK by shifting first
-      # global variable is used in function sed_in_files_md()
+      # global variable is used in function main()
       # as a CASE condition to call the right function
       shift # past the key and to the value
       START_AT_TASK="$1"; echo "$START_AT_TASK"
@@ -447,10 +450,11 @@ ask_user() {
   # ask_user(): For user interaction
   #
   # Purpose:
-  #   Ask user wether he wants to:
-  #     Continue: does nothing (go to next line)
-  #     Return:   calls return statement (to leave the function or script)
-  #     Skip:     can be used outside to skip the next code block  
+  #   Ask user whether he wants to:
+  #     Apply the task:           go to next line and apply the task
+  #     Return function:          calls the return statement
+  #     Continue loop with next:  go directly to next file or repo  
+  #     Break:                    leave the loop
   #
   # Arguments:
   #     $1:       name of the next code block (will be printed)
@@ -699,6 +703,7 @@ load_file_vars() {
   cd "$fullpath_no_scriptname" || return
   echo "--$LINENO \
     pwd: $(pwd)"
+  
   scriptname=$(basename "${BASH_SOURCE[0]}")
   scriptname_=${fullpath_with_scriptname##*/}
   echo "--$LINENO \
@@ -830,9 +835,14 @@ sed_in_files_md() {
   # Arguments:
   #   $1: sed file list with all the files to apply your substitutions
   #   $2: backup directory for all your files
-  #   $3: sed searchpattern
-  #   $4: sed replacement
-  #   $5: new wiki page url to append
+  #   S3: range (from line to line) to apply sed
+  #   S4: pattern (first filter)
+  #   $5: sed searchpattern (only lines which passed $4)
+  #   $6: sed replacement
+  #   $7: sed options
+  #   $8: sed separator
+  #   syntax:  range {s sep pattern sep search sep replace sep options}
+  #   $9: new wiki page url to append
   #  
   #-----------------------------------------------------------------------------
   # SED
@@ -1000,7 +1010,7 @@ sed_in_files_md() {
         sr)
           echo "sed_in_files_md() case: sr"
           if ! sed_search_replace "$file" "$filetmp" \
-            "$range" "$pattern" "$search" "$replace" "$option" "$sep"; then
+            "$range" "$pattern" "$search" "$replace" "$options" "$sep"; then
             /bin/rm -v -i $filetmp || true
             echo "exit: $LINENO"; return 1; 
           fi
@@ -1032,7 +1042,7 @@ sed_in_files_md() {
       echo "          (if you see no diff, no changes were made)";echo
       echo "--------------------------------------------------------------"
 
-      # print replacements with diff
+      # print substitutions with diff
       echo "--------------------------------------------------------------"
       diff "$file" "$dirbak/$newfilename"
       echo "--------------------------------------------------------------"
@@ -1062,7 +1072,7 @@ sed_append_url() {
   # ---------------------------------------------------------------------------
   # sed_append_url(): For Task II: 
   # Purpose: 
-  #   It adds a new Wiki URL reference to the list, wihich is at the end 
+  #   It adds a new Wiki URL reference to the list, which is at the end 
   #   of the input file. Within this list the right place for the reference is
   #   found and the new Wiki URL inserted.
   #   For now, I use it for all my README.md and Home.md GitHub pages.  
@@ -1176,12 +1186,12 @@ sed_append_url() {
     "$file")
   echo "linenum_repo_url_refs: $linenum_repo_url_refs"
   
-  # CASE: now we check for all the cases 1.) to 4.) described in the
+  # ALTERNATIVE: now we check for all the cases 1.) to 4.) described in the
   #       function description. 
   # This condition must always be true. 
   if [[ -n "$list_repo_url_refs"  ]]; then 
   
-    # CASE: check if URL already exist for that repo
+    # ALTERNATIVE: check if URL already exist for that repo
     #       if yes return to calling function
     
     # READARRAY: transform newline separated string into an array
@@ -1209,7 +1219,7 @@ sed_append_url() {
     
     done
 
-    # CASE: $appendurl does not yet exist
+    # ALTERNATIVE: $appendurl does not yet exist
     #       search for highest entry for this repo
 
     # TAIL: extract highest line number
@@ -1254,7 +1264,7 @@ sed_append_url() {
     num_last_digit=${num_max_repo_url_ref: -1 : 1}
     echo "num_last_digit: $num_last_digit"
 
-    # CASE: find out if last digit of num_max_repo_url_ref is a 2
+    # ALTERNATIVE: find out if last digit of num_max_repo_url_ref is a 2
     #       that means it only has a README.md and a Home.md page
     if  (( "$num_last_digit" == 2 )); then
 
@@ -1285,7 +1295,7 @@ sed_append_url() {
         echo "num_iter_line_file: $num_iter_line_file"
         echo "num_lines_file: $num_lines_file"
         
-        # CASE: last entry reached.
+        # ALTERNATIVE: last entry reached.
         #       test if num_repo_url_ref empty, 
         #       that means $num_new_repo_url_ref is the overall highest number
         #       then insert the $new_repo_url_ref and break loop 
@@ -1311,7 +1321,7 @@ sed_append_url() {
 
         fi
 
-        # CASE: not yet at the end of file
+        # ALTERNATIVE: not yet at the end of file
         #       not yet found line to insert, move on
 
         # ARITHMETIC: compare the numbers
@@ -1321,7 +1331,7 @@ sed_append_url() {
        
         else  
           
-        # CASE: $num_new_repo_url_ref is lower than $num_repo_url_ref
+        # ALTERNATIVE: $num_new_repo_url_ref is lower than $num_repo_url_ref
         #       insert it here, break the loop
 
           echo "found line, num_iter_line_file: $num_iter_line_file"
@@ -1348,7 +1358,7 @@ sed_append_url() {
 
       done
 
-    # CASE: $num_max_repo_url_ref is greater than 2
+    # ALTERNATIVE: $num_max_repo_url_ref is greater than 2
     #       that means it has additional Wiki pages
     #       just jump to that line number and append $new_repo_url_ref
 
@@ -1368,7 +1378,7 @@ sed_append_url() {
       echo "cmd:sed -E $cmd"
       sed -E "$cmd" "$file" >  "$filetmp"
 
-    # CASE: $num_last_digit < 2
+    # ALTERNATIVE: $num_last_digit < 2
     #       this means there is a README.md or Home.md missing
     #       or $num_last_digit was erroneously extracted  
     else
@@ -1383,7 +1393,7 @@ sed_append_url() {
     #MV: move/ overwrite $file with $filetmp
     mv "$filetmp" "$file"
 
-  # CASE: $list_repo_url_refs is empty
+  # ALTERNATIVE: $list_repo_url_refs is empty
   #       this means no Wiki pages found, 
   #       also README.md and Home.md are missing
   #       or $list_repo_url_refs was erroneously extracted
@@ -1919,9 +1929,9 @@ git_all_steps_dirlist() {
   #     for all your directories. It uses the shell function
   #     $ git status
   #     $ git add .
-  #     $ git push
   #     $ git commit --reedit-message=HEAD   # OR
   #     $ git commit -m "some default message"
+  #     $ git push
   #
   # From git commit --help
   #   --reuse-message=<commit>
@@ -2116,13 +2126,13 @@ function main() {
   # Purpose:
   #   get_options(): parses the command line sting 
   #                  reads passed option arguments and takes defined action:
-  #                   - prints doc or version strings if script is executed
-  #                     with ---doc or with --version options and exits script.
+  #                   - prints doc, help or version info, if script is executed
+  #                     with ---doc, --help or --version options and exits.
   #                   - prints debug info if script is run with --debug option
   #                 $@: passes the command line arguments to the function
   #                 $?: catches the return status of the last command.
   #
-  # TODO: adapt and improve the framework.
+  # TODO: adapt the function get_options() to your use case.
   # ---------------------------------------------------------------------------
   # Code
   if ! get_options "$@"; then exit 1; fi
@@ -2397,7 +2407,7 @@ function main() {
       # and leave (;;)  or  move on (;&) 
       ;&
 
-    #doc_begin_main----------Task_3_git_status---------------------------------
+    #doc_begin_main----------Task_3_git_diff-----------------------------------
     # -------------------------------------------------------------------------
     # Task_3_git_diff_HEAD: 
     #   apply git diff HEAD to all repos
