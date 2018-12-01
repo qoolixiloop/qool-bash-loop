@@ -978,8 +978,10 @@ sed_in_files_md() {
   # ---------------------------------------------------------------------------
   #============================================================================
 
+  echo "entering sed_in_files_md()"
+
   # INPUT: arguments
-  local file="$1"
+  local filelist="$1"
   local dirbak="$2"
   local commandLineOptions="$3"
   local separator="$4"
@@ -994,7 +996,7 @@ sed_in_files_md() {
   local sedScript 
 
   # CHECK: input arguments
-  echo "--$LINENO file: $file"
+  echo "--$LINENO filelist: $filelist"
   echo "--$LINENO dirbak: $dirbak"
   echo "--$LINENO commandLineOptions: $commandLineOptions"
   echo "--$LINENO separator: $separator"
@@ -1113,6 +1115,7 @@ sed_in_files_md() {
   /bin/rm -v -i $filetmp || true
 
   # return status of the last statement executed
+  echo "leaving sed_in_files_md()"
   return 
 
 }
@@ -1695,55 +1698,77 @@ sed_wrapper() {
   # answer is passed as a reference not a value! $answer won't work out
   local answer="the answer will be stored here"
   echo "--------------------------------------------------------------"
-  echo $'do you want to apply this command?\n$cmd'
+  echo $'>>> do you want to apply to file (a) or shell (c,b) or terminate (t)?'
   if ! ask_user 'next_sed' "$LINENO" answer; then
     echo "exit: $LINENO"; return 1; 
   fi
-  if [[ "$answer" == "a" ]]; then echo "apply to this file"
-  elif [[ "$answer" == "c" ]]; then echo "no loop, return"; return
-  elif [[ "$answer" == "b" ]]; then echo "no loop, return"; return
-  elif [[ "$answer" == "t" ]]; then echo "terminate function"; return 1
-  else echo "$LINENO : something went wrong"
-  fi
-  echo "--------------------------------------------------------------"
+  case "$answer" in
+    t)
+      echo "t: terminate function" 
+      return 1
+      ;;
+    a)
+      echo "a: apply to this file"
+      
+      echo "---------------------SED begin------------------------------------"
+      local o
+      if [[ -n "$commandLineOptions" ]]; then
+        echo "sed_1"
+        o=$(sed -E "$commandLineOptions" -e "$sedScript" <"$file" >"$filetmp") 
+      else
+        echo "sed_2"
+        o=$(sed -E -e "$sedScript" <"$file" >"$filetmp")
+      fi
+      echo "---------------------SED end--------------------------------------"
+      
+      # Do never apply to .md files with command p or =
+      if [[ "$command" == "p" ]] || [[ "$command" == "=" ]]; then
+          echo "print commands 'p' and '=' shall never affect my '.md' files"
+      else
+        
+        #SED OUTPUT
+        echo "------------------SED OUTPUT begin-------------------------------"
+        echo "$o"
+        echo "------------------SED OUTPUT end---------------------------------"
+        
+        #DIFF: show differences before and after
+        echo "---------------------DIFF begin-------------------------------"
+        diff -u --color "$file" "$filetmp"
+        echo "---------------------DIFF end---------------------------------"
 
-
-  echo "---------------------SED begin----------------------------------------"
-  # apply sed substitution to $file to whole line (g)
-  # avoid inline editing by writing into $filetmp
-  if [[ -n "$filetmp" ]]; then
-    if [[ -n "$commandLineOptions" ]]; then
-      echo "sed_1"
-      sed -E "$commandLineOptions" -e "$sedScript" <"$file" >"$filetmp" 
-    else
-      echo "sed_2"
-      sed -E -e "$sedScript" <"$file" >"$filetmp"
-    fi
-  else
-    if [[ -n "$commandLineOptions" ]]; then
-      echo "sed_3"
-      sed -E "$commandLineOptions" -e "$sedScript" <"$file" 
-    else
-      echo "sed_4"
-      sed -E -e "$sedScript" <"$file"
-    fi
-  fi
-  echo "---------------------SED end------------------------------------------"
-
-
-  #DIFF: show differences before and after
-  if [[ -n "$filetmp" ]]; then 
-    echo "---------------------DIFF begin-------------------------------------"
-    diff -u --color "$file" "$filetmp"
-    echo "---------------------DIFF end---------------------------------------"
-  fi
-
-  #MV: move/ overwrite $file with $filetmp
-  if [[ -n "$filetmp" ]]; then 
-    echo "---------------------MV begin---------------------------------------"
-    mv "$filetmp" "$file"
-    echo "---------------------MV begin---------------------------------------"
-  fi
+        # user interaction: 
+        # if the function returns 1, do exit function with return 1
+        # if user answer a, c, b, t act accordingly
+        # answer is passed as a reference not a value! $answer won't work out
+        local answer="the answer will be stored here"
+        echo "--------------------------------------------------------------"
+        echo $'>>> change file (a), skip (b,c,t)'
+        if ! ask_user 'mv  filetmp to file?' "$LINENO" answer; then
+          echo "exit: $LINENO"; return 1; 
+        fi
+        if [[ $answer == "a" ]]; then 
+          #MV: move/ overwrite $file with $filetmp
+          echo "---------------------MV begin---------------------------------"
+          mv "$filetmp" "$file"
+          echo "---------------------MV begin---------------------------------"
+        else
+          echo "changes not applied to file"
+        fi
+      fi
+      ;;
+    b|c)
+      echo "b,c: just output to shell"
+      echo "---------------------SED begin------------------------------------"
+      if [[ -n "$commandLineOptions" ]]; then
+        echo "sed_3"
+        sed -E "$commandLineOptions" -e "$sedScript" <"$file" 
+      else
+        echo "sed_4"
+        sed -E -e "$sedScript" <"$file"
+      fi
+      echo "---------------------SED end--------------------------------------"
+      ;;
+  esac
 
 }
 # -----------------------------------------------------------------------------
