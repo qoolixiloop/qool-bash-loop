@@ -9,26 +9,26 @@ setlocal fml=1
 setlocal fdn=20
 setlocal fen
 silent! normal! zE
-4,15fold
-16,103fold
-104,105fold
-106,119fold
-122,136fold
-137,148fold
-153,167fold
-168,192fold
-197,228fold
-229,284fold
-289,301fold
-302,310fold
-315,343fold
-344,486fold
-491,511fold
-512,585fold
-590,618fold
-619,630fold
-635,678fold
-682,705fold
+5,16fold
+17,104fold
+105,106fold
+107,120fold
+124,138fold
+139,150fold
+155,169fold
+170,194fold
+199,230fold
+231,286fold
+291,303fold
+304,312fold
+317,345fold
+346,488fold
+493,513fold
+514,587fold
+592,620fold
+621,632fold
+636,673fold
+681,704fold
 716,731fold
 732,775fold
 780,792fold
@@ -37,59 +37,55 @@ silent! normal! zE
 834,862fold
 895,979fold
 867,979fold
-980,1118fold
-1123,1173fold
-1174,1462fold
-1466,1543fold
-1544,1747fold
-1752,1767fold
-1768,1817fold
-1822,1837fold
-1838,1887fold
-1892,1907fold
-1908,1957fold
-1962,1978fold
-1979,2029fold
-2034,2049fold
-2050,2099fold
-2104,2134fold
-2135,2281fold
-2286,2303fold
-2304,2322fold
-2323,2346fold
-2348,2353fold
-2355,2378fold
-2380,2386fold
-2388,2468fold
-2470,2476fold
-2478,2558fold
-2560,2566fold
-2568,2597fold
-2599,2605fold
-2607,2637fold
-2639,2645fold
-2647,2677fold
-2679,2685fold
-2687,2717fold
-2719,2725fold
-2727,2760fold
-2762,2768fold
-2770,2784fold
-2786,2792fold
-2794,2812fold
-2815,2819fold
-2826,2880fold
-2881,2888fold
-867
-normal! zo
-980
-normal! zo
-let s:l = 1083 - ((17 * winheight(0) + 16) / 33)
+980,1121fold
+1126,1176fold
+1177,1465fold
+1470,1547fold
+1548,1788fold
+1793,1808fold
+1809,1858fold
+1863,1878fold
+1879,1928fold
+1933,1948fold
+1949,1998fold
+2003,2019fold
+2020,2070fold
+2075,2090fold
+2091,2140fold
+2145,2175fold
+2176,2322fold
+2327,2344fold
+2345,2363fold
+2364,2387fold
+2389,2394fold
+2396,2419fold
+2421,2427fold
+2429,2509fold
+2511,2517fold
+2519,2599fold
+2601,2607fold
+2609,2638fold
+2640,2646fold
+2648,2678fold
+2680,2686fold
+2688,2718fold
+2720,2726fold
+2728,2758fold
+2760,2766fold
+2768,2801fold
+2803,2809fold
+2811,2825fold
+2827,2833fold
+2835,2853fold
+2856,2860fold
+2867,2921fold
+2922,2929fold
+let s:l = 864 - ((45 * winheight(0) + 16) / 33)
 if s:l < 1 | let s:l = 1 | endif
 exe s:l
 normal! zt
-1083
-normal! 058|
+864
+normal! 0
 let &so = s:so_save | let &siso = s:siso_save
 doautoall SessionLoadPost
 " vim: set ft=vim :

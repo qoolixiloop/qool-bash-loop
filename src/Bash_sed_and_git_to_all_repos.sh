@@ -1,6 +1,7 @@
 #!/bin/bash
 #shellcheck disable=SC2015
 
+
 #==============================================================================
 #doc_begin---------------------------------------------------------------------
 # -----------------------------------------------------------------------------
@@ -118,6 +119,7 @@
 #doc_end-----------------------------------------------------------------------
 #==============================================================================
 
+
 version() { # this function is called from get_options()
 
   #============================================================================
@@ -193,7 +195,7 @@ ____EOF
 # -----------------------------------------------------------------------------
 
 
-generate_doc() { # called by the functions doc() and ihelp()
+generate_doc() { # this function is called from doc() and ihelp()
  
   #============================================================================
   #doc_begin-------------------------------------------------------------------
@@ -487,7 +489,7 @@ get_options() { # this function is called from main()
 # -----------------------------------------------------------------------------
 
 
-ask_user() {
+ask_user() { # this function is called from all user defined functions
 
   #============================================================================
   #doc_begin-------------------------------------------------------------------
@@ -586,7 +588,7 @@ ask_user() {
 # -----------------------------------------------------------------------------
 
 
-script_sourced_or_executed() {
+script_sourced_or_executed() { # this function is called from main()
 
   #============================================================================
   #doc_begin-------------------------------------------------------------------
@@ -631,7 +633,6 @@ script_sourced_or_executed() {
 # -----------------------------------------------------------------------------
 
 
-
 #==============================================================================
 #doc_begin---------------------------------------------------------------------
 # -----------------------------------------------------------------------------
@@ -671,12 +672,10 @@ script_sourced_or_executed() {
 # -----------------------------------------------------------------------------
 #==============================================================================
 
-# shellcheck disable=SC1091
 
-
-
+# ** SOURCED SCRIPS **
 # -----------------------------------------------------------------------------
-
+# shellcheck disable=SC1091
 
 
 #==============================================================================
@@ -704,6 +703,7 @@ script_sourced_or_executed() {
 # -----------------------------------------------------------------------------
 #==============================================================================
 
+
 # ** GLOBAL VARIABLES **
 # -----------------------------------------------------------------------------
 
@@ -712,7 +712,7 @@ script_sourced_or_executed() {
 # -----------------------------------------------------------------------------
 
 
-load_file_vars() {
+load_file_vars() { # this function is called from main()
 
   #============================================================================
   #doc_begin-------------------------------------------------------------------
@@ -776,7 +776,7 @@ load_file_vars() {
 # -----------------------------------------------------------------------------
 
 
-check_filelist(){
+check_filelist(){ # this function is called from main()
 
   #============================================================================
   #doc_begin-------------------------------------------------------------------
@@ -817,7 +817,7 @@ check_filelist(){
 # -----------------------------------------------------------------------------
 
 
-check_dirlist() {
+check_dirlist() { # this function is called from main()
 
   #============================================================================
   #doc_begin-------------------------------------------------------------------
@@ -863,7 +863,7 @@ check_dirlist() {
 # -----------------------------------------------------------------------------
 
 
-sed_in_files_md() {
+sed_in_files_md() { # this function is called from main()
 
   #============================================================================
   #doc_begin-------------------------------------------------------------------
@@ -988,8 +988,8 @@ sed_in_files_md() {
   local addressRange="$5"
   local regexRange="$6"
   local commandOptions="$7"
-  local substituteSearch="${8}"
-  local substituteReplace="${9}"
+  local substituteSearch="$8"
+  local substituteReplace="$9"
   local appendurl="${10}"
 
   # sedScript: holds the instructions applied to each line of the file 
@@ -1122,7 +1122,7 @@ sed_in_files_md() {
 # -----------------------------------------------------------------------------
 
 
-sed_append_url() {
+sed_append_url() { # this fuction is called from sed_in_files_md()
    
   #============================================================================
   #doc_begin-------------------------------------------------------------------
@@ -1270,7 +1270,7 @@ sed_append_url() {
       echo "appendurl: $appendurl"
 
       if [[ "$repo_url" == "$appendurl"  ]]; then
-        echo $'==================\nURL already exists\n==================='
+        printf "==================\nURL already exists\n==================\n"
         return 1
       fi 
     
@@ -1465,7 +1465,8 @@ sed_append_url() {
 }
 # -----------------------------------------------------------------------------
 
-sed_wrapper() {
+
+sed_wrapper() { # this function is called from sed_in_files_md()
 
   #============================================================================
   #doc_begin; help_begin-------------------------------------------------------
@@ -1556,7 +1557,7 @@ sed_wrapper() {
   local regexRange="$6"
   local command="$7"
   local commandOptions="$8"
-  local substituteSearch="${9}"
+  local substituteSearch="$9"
   local substituteReplace="${10}"
 
   # sedScript: holds the instructions applied to each line of the file 
@@ -1662,7 +1663,6 @@ sed_wrapper() {
       ;;
     s)
       echo "command: s"
-      
       if [[ -n "$substituteSearch" ]] && [[ -n "$substituteReplace" ]]; then
         if [[ -n "$addressRange" ]] && [[ -n "$regexRange" ]]; then
           sedScript="${addressRange}{${regexRange}\
@@ -1698,8 +1698,8 @@ sed_wrapper() {
   # answer is passed as a reference not a value! $answer won't work out
   local answer="the answer will be stored here"
   echo "--------------------------------------------------------------"
-  echo $'>>> do you want to apply to file (a) or shell (c,b) or terminate (t)?'
-  if ! ask_user 'next_sed' "$LINENO" answer; then
+  echo ">>> do you want to apply to file (a) or shell (c,b) or terminate (t)?"
+  if ! ask_user "next_sed" "$LINENO" answer; then
     echo "exit: $LINENO"; return 1; 
   fi
   case "$answer" in
@@ -1721,9 +1721,21 @@ sed_wrapper() {
       fi
       echo "---------------------SED end--------------------------------------"
       
+      #SED OUTPUT
+      echo "------------------SED OUTPUT begin-------------------------------"
+      echo "$o"
+      echo "------------------SED OUTPUT end---------------------------------"
+        
+      #DIFF: show differences before and after
+      echo "---------------------DIFF begin-------------------------------"
+      diff -u --color "$file" "$filetmp"
+      echo "---------------------DIFF end---------------------------------"
+
       # Do never apply to .md files with command p or =
       if [[ "$command" == "p" ]] || [[ "$command" == "=" ]]; then
           echo "print commands 'p' and '=' shall never affect my '.md' files"
+          echo "leaving sed_wrapper() and move on to next file"
+
       else
         
         #SED OUTPUT
@@ -1742,8 +1754,8 @@ sed_wrapper() {
         # answer is passed as a reference not a value! $answer won't work out
         local answer="the answer will be stored here"
         echo "--------------------------------------------------------------"
-        echo $'>>> change file (a), skip (b,c,t)'
-        if ! ask_user 'mv  filetmp to file?' "$LINENO" answer; then
+        echo ">>> change file (a), skip (b,c,t)"
+        if ! ask_user "mv  filetmp to file?" "$LINENO" answer; then
           echo "exit: $LINENO"; return 1; 
         fi
         if [[ $answer == "a" ]]; then 
@@ -1768,12 +1780,16 @@ sed_wrapper() {
       fi
       echo "---------------------SED end--------------------------------------"
       ;;
+    *)
+      echo "sth. went wrong, leave sed_wrapper() and move on to next file"
+      ;;
   esac
 
 }
 # -----------------------------------------------------------------------------
 
-git_diff_head_dirlist() {
+
+git_diff_head_dirlist() { # this function is called from sed_in_files_md()
 
   #============================================================================
   #doc_begin-------------------------------------------------------------------
@@ -1843,7 +1859,7 @@ git_diff_head_dirlist() {
 # -----------------------------------------------------------------------------
 
 
-git_status_dirlist() {
+git_status_dirlist() { # this function is called from sed_in_files_md()
 
   #============================================================================
   #doc_begin-------------------------------------------------------------------
@@ -1913,7 +1929,7 @@ git_status_dirlist() {
 # -----------------------------------------------------------------------------
 
 
-git_add_dirlist() {
+git_add_dirlist() { # this function is called from sed_in_files_md()
 
   #============================================================================
   #doc_begin-------------------------------------------------------------------
@@ -1983,7 +1999,7 @@ git_add_dirlist() {
 # -----------------------------------------------------------------------------
 
 
-git_commit_dirlist(){
+git_commit_dirlist(){ # this function is called from sed_in_files_md()
 
   #============================================================================
   #doc_begin-------------------------------------------------------------------
@@ -2055,7 +2071,7 @@ git_commit_dirlist(){
 # -----------------------------------------------------------------------------
 
 
-git_push_dirlist(){
+git_push_dirlist(){ # this function is called from sed_in_files_md()
 
   #============================================================================
   #doc_begin-------------------------------------------------------------------
@@ -2125,7 +2141,7 @@ git_push_dirlist(){
 # -----------------------------------------------------------------------------
 
 
-git_all_steps_dirlist() {
+git_all_steps_dirlist() { # this function is called from sed_in_files_md()
  
   #============================================================================
   #doc_begin-------------------------------------------------------------------
@@ -2307,7 +2323,7 @@ git_all_steps_dirlist() {
 # -----------------------------------------------------------------------------
 
 
-function main() {
+function main() { # only function called from this script
 
   #============================================================================
   #doc_begin_main--------------------------------------------------------------
