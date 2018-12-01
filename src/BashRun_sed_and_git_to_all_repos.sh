@@ -14,23 +14,27 @@
 # -----------------------------------------------------------------------------
 
 # APPENDURL: new webpages to append
-URL_ARRAY=(
-https://github.com/qoolixiloop/qool-bash-loop/wiki/bash-script-to-learn-from-example
-https://github.com/qoolixiloop/qool-bash-loop/wiki/bash-script-template
-https://github.com/qoolixiloop/qool-bash-loop/wiki/bash-scripting-cheetsheet
-https://github.com/qoolixiloop/qool-bash-loop/wiki/bash-scripting-reference-cards
-https://github.com/qoolixiloop/qool-tmux-loop/wiki/pair-programming-with-tmate
-https://github.com/qoolixiloop/qool-tmux-loop/wiki/tmux-cheet-sheet
-https://github.com/qoolixiloop/qool-tmux-loop/wiki/tmux-start-up-script
-https://github.com/qoolixiloop/qool-awk-loop/wiki/awk-cheet-sheet
-https://github.com/qoolixiloop/qool-awk-loop/wiki/bash-script-with-awk-to-learn-from-example
-https://github.com/qoolixiloop/qool-linux-loop/wiki/sed-in-a-nutshell
-https://github.com/qoolixiloop/qool-linux-loop/wiki/bash-script-with-sed-to-learn-from-example
-https://github.com/qoolixiloop/qool-linux-loop/wiki/grep-in-a-nutshell
-https://github.com/qoolixiloop/qool-linux-loop/wiki/bash-script-with-grep-to-learn-from-example
-https://github.com/qoolixiloop/qool-linux-loop/wiki/cut-in-a-nutshell
-);  declare -p URL_ARRAY
+# URL_ARRAY=(
+# https://github.com/qoolixiloop/qool-bash-loop/wiki/bash-script-to-learn-from-example
+# https://github.com/qoolixiloop/qool-bash-loop/wiki/bash-script-template
+# https://github.com/qoolixiloop/qool-bash-loop/wiki/bash-scripting-cheetsheet
+# https://github.com/qoolixiloop/qool-bash-loop/wiki/bash-scripting-reference-cards
+# https://github.com/qoolixiloop/qool-tmux-loop/wiki/pair-programming-with-tmate
+# https://github.com/qoolixiloop/qool-tmux-loop/wiki/tmux-cheet-sheet
+# https://github.com/qoolixiloop/qool-tmux-loop/wiki/tmux-start-up-script
+# https://github.com/qoolixiloop/qool-awk-loop/wiki/awk-cheet-sheet
+# https://github.com/qoolixiloop/qool-awk-loop/wiki/bash-script-with-awk-to-learn-from-example
+# https://github.com/qoolixiloop/qool-linux-loop/wiki/sed-in-a-nutshell
+# https://github.com/qoolixiloop/qool-linux-loop/wiki/bash-script-with-sed-to-learn-from-example
+# https://github.com/qoolixiloop/qool-linux-loop/wiki/grep-in-a-nutshell
+# https://github.com/qoolixiloop/qool-linux-loop/wiki/bash-script-with-grep-to-learn-from-example
+# https://github.com/qoolixiloop/qool-linux-loop/wiki/cut-in-a-nutshell
+# );  declare -p URL_ARRAY
 
+URL_ARRAY=(
+https://github.com/qoolixiloop/qool-bash-loop/wiki/learn-bash-by-example,-read-from-and-write-to-files-line-by-line
+https://github.com/qoolixiloop/qool-markdown-loop/wiki/add-a-youtube-video
+);  declare -p URL_ARRAY
 
 # -----------------------------------------------------------------------------
 
@@ -136,18 +140,24 @@ done
 # ---------------------------------------------------------------------------
 
 # SEARCH: search pattern (REGEX, literal meaning within group () ), exept for [
+# SEARCH_ARRAY=(
+# '(\[302]: https://github.com/qoolixiloop/qool-awk-loop/ \"wikiqool-awk-loop.wiki\")'
+# '(\[402]: https://github.com/qoolixiloop/qool-bash-loop/ \"wikiqool-bash-loop.wiki\")'
+# );  declare -p SEARCH_ARRAY
+# 
+# 
+# # REPLACE: replace string (TEXT, only escape " and use separator | )
+# REPLACE_ARRAY=(
+# '[302]: https://github.com/qoolixiloop/qool-awk-loop/wiki \"wikiqool-awk-loop.wiki\"'
+# '[402]: https://github.com/qoolixiloop/qool-bash-loop/wiki \"wikiqool-bash-loop.wiki\"'
+# );  declare -p REPLACE_ARRAY
+
 SEARCH_ARRAY=(
-'(\[302]: https://github.com/qoolixiloop/qool-awk-loop/ \"wikiqool-awk-loop.wiki\")'
-'(\[402]: https://github.com/qoolixiloop/qool-bash-loop/ \"wikiqool-bash-loop.wiki\")'
+
 );  declare -p SEARCH_ARRAY
-
-
-# REPLACE: replace string (TEXT, only escape " and use separator | )
 REPLACE_ARRAY=(
-'[302]: https://github.com/qoolixiloop/qool-awk-loop/wiki \"wikiqool-awk-loop.wiki\"'
-'[402]: https://github.com/qoolixiloop/qool-bash-loop/wiki \"wikiqool-bash-loop.wiki\"'
-);  declare -p REPLACE_ARRAY
 
+);  declare -p REPLACE_ARRAY
 
 # -----------------------------------------------------------------------------
 

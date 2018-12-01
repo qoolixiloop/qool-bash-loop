@@ -5,12 +5,12 @@
 #doc_begin---------------------------------------------------------------------
 # -----------------------------------------------------------------------------
 # Bash Script:  SED substitution on all md files.
-#               Git status, add, commit and push on all repos.
+#               Git diff, status, add, commit and push on all repos.
 #               Automatic generation of docs.
 # Framework:    own template
 # Syntax check: shellcheck
 # Autor:        Roland Benz
-# Date:         9.Nov.2018
+# Date:         01.Dez.2018
 # -----------------------------------------------------------------------------
 #doc_end-----------------------------------------------------------------------
 #help_begin--------------------------------------------------------------------
@@ -19,17 +19,62 @@
 #   1.) to get help:         $ ./Scriptname --help
 #   2.) to get version info: $ ./Scriptname --version (or -v)
 #   3.) to get doc info:     $ ./Scriptname --doc
-#   4.) to run task 2:       $ GLOBAL_VARNAME="value" \
+#   4.) to run task 2:       $ GLOBAL_VARNAME="value"... \
 #                                ./Scriptname \
-#                                  --task Task_2_{ home_md | readme_md } \
+#                                  --task Task_2_{ home_md || readme_md } \
 #                                  --cmd command_name
-#   4.1) command: sr         $ SEARCH="mySearch" REPLACE="myReplacment" \
-#        (search,replace)        ./Scriptname \
-#                                  --task Task_2_{ home_md | readme_md } \
-#                                  --cmd sr
-#   4.2) command: a_url      $ APPENDURL="my_new_Wiki_page_URL" \
+#   4.1) command: a         $ [COMMAND_LINE_OPTIONS=""] && [SEPARATOR=""] \
+#        (SED append)         && (ADDRESS_RANGE="N,M || M" || \
+#                                 REGEX_RANGE="/reg_from/,/reg_to/ || /reg/") \
+#                             && COMMAND_OPTIONS="append_text" \  
+#                                ./Scriptname \
+#                                  --task Task_2_{ home_md || readme_md } \
+#                                  --cmd a
+#   4.2) command: i         $ [COMMAND_LINE_OPTIONS=""] && [SEPARATOR=""] \
+#        (SED insert)         && (ADDRESS_RANGE="N,M || M" || \
+#                                  REGEX_RANGE="/reg_from/,/reg_to/ || /reg/") \ 
+#                             && COMMAND_OPTIONS="insert_text" \ 
+#                                ./Scriptname \
+#                                  --task Task_2_{ home_md || readme_md } \
+#                                  --cmd i
+#   4.3) command: d         $ [COMMAND_LINE_OPTIONS=""] && [SEPARATOR=""] \
+#        (SED delete)          && ((ADDRESS_RANGE="N,M || M" && \
+#                                   [REGEX_RANGE="/reg_from/,/reg_to/ || /reg/"]) || \
+#                                  ([ADDRESS_RANGE="N,M || M"] && \
+#                                   REGEX_RANGE="/reg_from/,/reg_to/ || /reg/")) \   
+#                                ./Scriptname \
+#                                  --task Task_2_{ home_md || readme_md } \
+#                                  --cmd d
+#   4.4) command: =         $ [COMMAND_LINE_OPTIONS=""] && [SEPARATOR=""] \
+#        (SED print line num)  && ((ADDRESS_RANGE="N,M || M" && \
+#                                   [REGEX_RANGE="/reg_from/,/reg_to/ || /reg/"]) || \
+#                                  ([ADDRESS_RANGE="N,M || M"] && \
+#                                   REGEX_RANGE="/reg_from/,/reg_to/ || /reg/")) \   
+#                                ./Scriptname \
+#                                  --task Task_2_{ home_md || readme_md } \
+#                                  --cmd =
+#   4.5) command: p         $ [COMMAND_LINE_OPTIONS=""] && [SEPARATOR=""] \
+#        (SED print lines)     && ((ADDRESS_RANGE="N,M || M" && \
+#                                   [REGEX_RANGE="/reg_from/,/reg_to/ || /reg/"]) || \
+#                                  ([ADDRESS_RANGE="N,M || M"] && \ 
+#                                   REGEX_RANGE="/reg_from/,/reg_to/ || /reg/")) \   
+#                                ./Scriptname \
+#                                  --task Task_2_{ home_md || readme_md } \
+#                                  --cmd p
+#   4.6) command: s         $ [COMMAND_LINE_OPTIONS=""] && [SEPARATOR=""] \
+#        (SED substitute)      && ((ADDRESS_RANGE="N,M || M" && \
+#                                   [REGEX_RANGE="/reg_from/,/reg_to/ || /reg/"]) || \
+#                                  ([ADDRESS_RANGE="N,M || M"] && \
+#                                   REGEX_RANGE="/reg_from/,/reg_to/ || /reg/")) \   
+#                              && COMMAND_OPTIONS="none || g || c || gc" \
+#                                   SUBSTITUTE_SEARCH="reg_search" 
+#                                   SUBSTITUTE_REPLACE="text_replace"
+#                                ./Scriptname \
+#                                  --task Task_2_{ home_md || readme_md } \
+#                                  --cmd s
+#   4.7) command: a_url      $ APPENDURL="my_new_Wiki_page_URL" \
 #        (append url)            ./Scriptname \
-#                                  --task Task_2_{ home_md | readme_md } \
+#                                  --task Task_2_{ home_md || readme_md } \
 #                                  --cmd a_url
 #   5.) to run other tasks:  get a complete task list with --help option
 #   5.1)  pattern:           $ ./Scriptname --task Task_1_ { _3_, _4_ }
@@ -93,8 +138,8 @@ version() { # this function is called from get_options()
   # Everything between the two EOF's will be printed 
   cat << ____EOF
     Author:  Roland Benz
-    Version: 1.0.0
-    Date:    12. Nov.2018
+    Version: 2.0.0
+    Date:    01.Dez.2018
 ____EOF
 
   # return 1 to indicate that the script shall terminate
@@ -825,24 +870,27 @@ sed_in_files_md() {
   # ---------------------------------------------------------------------------
   # sed_in_files_md(): For Task II and Task III
   # Purpose:
-  #   1.)  make a backup of all files you pass to the function
-  #   2.a) make substitutions on all files you pass to the function
-  #        |  it uses sed and uses the input arguments as follows:
-  #        |    sed "s/$1/$2/g $3
-  #        |  and reassigns them as follows:
-  #        |    sed "s/searchpattern/replacement/g" "$filelist"
-  #   2.b) append new GitHub Wiki page URL to all Home.md and README.md
+  #   1) I use it to loop through all README.md and Home.md files
+  #      make a backup of each file and call one of two funcions:
+  #   2) If the function sed_wrapper() is called in a loop, each file will
+  #      be edited by SED. Available SED commands are delete, append, insert,
+  #      print line, print line numbers, or substitute with respect to  one 
+  #      or more filters applied.
+  #   3) If the function sed_append_url() is called, a new GitHub Wiki 
+  #      page URL referece is appended to all Home.md and README.md files.
   # Arguments:
-  #   $1: sed file list with all the files to apply your substitutions
-  #   $2: backup directory for all your files
-  #   S3: range (from line to line) to apply sed
-  #   S4: pattern (first filter)
-  #   $5: sed searchpattern (only lines which passed $4)
-  #   $6: sed replacement
-  #   $7: sed options
-  #   $8: sed separator
-  #   syntax:  range {s sep pattern sep search sep replace sep options}
-  #   $9: new wiki page url to append
+  #   $1    file; the input file to read from; will be overwritten by $2
+  #   $2    backup directory for all your files
+  #   $3    commandLineOptions; SED Options; see "$ sed --help";
+  #                           -E is hard coded here 
+  #                           e.g. use -n with command 'p' or command '='
+  #   $4    separator"; use it, if your strings contain many "/"
+  #   $5    addressRange; either "N_from,M_to" or "M"
+  #   $6    regexPattern; either "/reg_from/,/reg_to/" or "/reg/"
+  #   $7    commandOptions "for a,i:'TEXT' to add; for s: 'g' or '' "
+  #   ${8}  substituteSearch; reg
+  #   ${9}  substituteReplace; text
+  #   ${10} new wiki page url to append
   #  
   #-----------------------------------------------------------------------------
   # SED
@@ -930,26 +978,40 @@ sed_in_files_md() {
   # ---------------------------------------------------------------------------
   #============================================================================
 
-  # input arguments
-  local filelist="$1"
-  local dirbak="$2"  #backup folder
-  local range="$3"
-  local pattern="$4"
-  local search="$5"
-  local replace="$6"
-  local options="$7"
-  local sep="$8"
-  local appendurl="$9"
-  echo; echo "--$LINENO filelist: $filelist"
-  echo "--$LINENO dirbak: $dirbak";
-  echo "--$LINENO range: $range";
-  echo "--$LINENO pattern: $pattern";
-  echo "--$LINENO search: $search";
-  echo "--$LINENO replace: $replace";
-  echo "--$LINENO options: $options";
-  echo "--$LINENO separator: $sep";
+  # INPUT: arguments
+  local file="$1"
+  local dirbak="$2"
+  local commandLineOptions="$3"
+  local separator="$4"
+  local addressRange="$5"
+  local regexRange="$6"
+  local commandOptions="$7"
+  local substituteSearch="${8}"
+  local substituteReplace="${9}"
+  local appendurl="${10}"
+
+  # sedScript: holds the instructions applied to each line of the file 
+  local sedScript 
+
+  # CHECK: input arguments
+  echo "--$LINENO file: $file"
+  echo "--$LINENO dirbak: $dirbak"
+  echo "--$LINENO commandLineOptions: $commandLineOptions"
+  echo "--$LINENO separator: $separator"
+  echo "--$LINENO addressRange: $addressRange"
+  echo "--$LINENO regexRange: $regexRange"
+  echo "--$LINENO command: $TASK_2_COMMAND"  # set via --cmd & get_options()
+  echo "--$LINENO commandOptions: $commandOptions"
+  echo "--$LINENO substituteSearch: $substituteSearch"
+  echo "--$LINENO substituteReplace: $substituteReplace"
   echo "--$LINENO appendurl: $appendurl";
 
+  #CHECK: number of arguments
+  if [[ "$#" -ne 10 ]]; then
+    echo "ERROR: number of arguments: $#; but should be 10"
+    return
+  fi
+  echo "number of arguments: $#"
 
   # temporary file: used for sed, and then moved
   # (if for some reason it still exists, 
@@ -1007,29 +1069,22 @@ sed_in_files_md() {
       # the value assigned to command line option -c or -cmd
       # is assigned to global variable $TASK_2_COMMAND
       case "$TASK_2_COMMAND" in 
-        sr)
-          echo "sed_in_files_md() case: sr"
-          if ! sed_search_replace "$file" "$filetmp" \
-            "$range" "$pattern" "$search" "$replace" "$options" "$sep"; then
+        a|i|d|=|p|s)
+          echo "sed_in_files_md() case: sed_wrapper; a,i,d,=,p,s"
+          if ! sed_wrapper "$file" "$filetmp" \
+            "$commandLineOptions" "$separator" "$addressRange" "$regexRange" \
+            "$TASK_2_COMMAND" "$commandOptions" \
+            "$substituteSearch" "$substituteReplace"; then
             /bin/rm -v -i $filetmp || true
             echo "exit: $LINENO"; return 1; 
           fi
           ;;
         a_url)
-          echo "sed_in_files_md() case: a_url"
+          echo "sed_in_files_md() case: sed_append_url(); a_url"
           if ! sed_append_url "$file" "$filetmp" "$appendurl"; then
             /bin/rm -v -i $filetmp || true
             echo "exit: $LINENO"; return 1; 
           fi
-          ;;
-        a)
-          echo "sed_in_files_md() case: a: not yet implemented"
-          ;;
-        i)
-          echo "sed_in_files_md() case: i: not yet implemented"
-          ;;
-        s)
-          echo "sed_in_files_md() case: s: not yet implemented"
           ;;
         *)
           echo "sed_in_files_md() case: command not available"
@@ -1044,9 +1099,8 @@ sed_in_files_md() {
 
       # print substitutions with diff
       echo "--------------------------------------------------------------"
-      diff "$file" "$dirbak/$newfilename"
+      diff --color "$file" "$dirbak/$newfilename"
       echo "--------------------------------------------------------------"
-
 
       # else if $file is not a file or not readable
     else
@@ -1408,132 +1462,232 @@ sed_append_url() {
 }
 # -----------------------------------------------------------------------------
 
-sed_search_replace() {
-   
+sed_wrapper() {
+
   #============================================================================
   #doc_begin; help_begin-------------------------------------------------------
   # ---------------------------------------------------------------------------
-  # sed_search_replace(): For Task II: 
+  # sed_wrapper(): For Task II: 
   # Purpose: 
-  #   A wrapper to perform a search and replace with SED. 
+  #   A wrapper with predefined SED strings.
+  #   Serves as a reminder of the syntax for the different SED Commands
+  #
   # Arguments:
-  #   $1             : filename of the file to change
-  #   $2             : a temporary file $filetmp to avoid the SED -i option
-  #   $3, $RANGE     : the range of lines N,M or just one line M to apply SED
-  #   $4, $PATTERN   : pattern to find lines
-  #   $5, $SEARCH    : if pattern is given search only within those lines
-  #   $6, $REPLACE   : replace what is matched by search
-  #   $7, $OPTIONS   : option e.g. g, gc, p, d, a, i
-  #   $8, $SEPARATOR : separator (if you have many backslashes use e.g | or #)
-  # Escape:
-  # ( the list is most certainly not 100% complete, but shows most cases)
-  #  "      : used to build the command string -> must be escaped everywhere
-  #  /      : used to separate command strings -> must be escaped everywhere
-  #         : or use $8 to define a new separator, e.g. | or #
-  #  '      : must not be escaped
-  #  \      : ignored if not necessary, except before a separator, () or []
-  #         : any symbol can be escaped, whether necessary or not
-  #  \\     : to escape an escape
-  #  \\\    : if you have a literal separator
-  #  [      : even inside of groups ( \[  ] ) it has to be escaped, if meaning 
-  #         : is literal. Otherwise it is parsed as a class.
-  #  &      : used in the replacement to include the match into the replacement
-  #         : -> escape it in the replacement if literal meaning is wanted
-  #  in $4  : regex! any symbol must be escaped if literal meaning is wanted
-  #         : exception within () and []
-  #  in $5  : regex! any symbol must be escaped if literal meaning is wanted
-  #         : exception within () and []
-  #  in $6  : text!
+  #  There are a lot of input arguments, and they must all be passed at the 
+  #  right position, for the function to work. Not used arguments are passed
+  #  as an own separate empty string "". Because I only use the function
+  #  programmatically, this is rather an advantage than a disadvantage.
+  #   $1: file; the input file to read from; will be overwritten by $2
+  #   $2  filetmp; the output file to write to; overwrites $1
+  #   $3  commandLineOptions; SED Options; see "$ sed --help";
+  #                           -E is hard coded here 
+  #                           e.g. use -n with command 'p' or command '='
+  #   $4  separator"; use it, if your strings contain many "/"
+  #   $5  addressRange; either "N_from,M_to" or "M"
+  #   $6  regexPattern; either "/reg_from/,/reg_to/" or "/reg/"
+  #   $7  command; one of "a, i, d, p, =, s" (see "$ man sed" for a list)
+  #   $8  commandOptions "for a,i:'TEXT' to add; for s: 'g' or '' "
+  #   ${9} substituteSearch; reg
+  #   ${10} substituteReplace; text
+  # 
+  # SED: Usage
+  #  SED -E sedOptions sedScript <inputfile >outputFile
+  #
+  # REGEX Extended 
+  #   1.)  use sedOption -E (set here by default) 
+  #   2.)  Literal vs Special meaning  of characters and digits
+  #   2.1) Escape "\" rules of extended Regex:
+  #          a-z, A-Z, 0-9: all have literal meaning unescaped
+  #          \a-\z, \A-\Z : some have special meaning escaped
+  #          \specialCharacters: all have literal meaning escaped
+  #         specialCharacters: some have special meaning unescaped 
+  #   2.2) additional escape "\" rules of SED specific special characters:
+  #          ": used to build the command string -> must be escaped everywhere
+  #          /: used to separate command strings -> must be escaped everywhere
+  #             or use a new separator, e.g. | or #
+  #          ': must not be escaped
+  #
+  # Source to learn SED
+  #   $ info sed  ("$ man sed", and "$ sed --help" are just summaries)
+  #
+  # In a nutshell, how SED work
+  #   Because Regex as well as SED commands and options are single characters,
+  #   digits or symbols, they are not easy to read, but extremly compact and
+  #   short in size.
+  #   By default SED reads a file line by line, and applies the whole sedScript
+  #   to one line at a time. This is called a cycle. But the default behaviour 
+  #   can be changed by certain commands. It is even possible to read a whole
+  #   file without ever ending one cycle.
+  #   SED has two buffers, called pattern space and holding space.
+  #   The pattern space is a one line buffer, where the whole sedScript is 
+  #   applied for each line of the file. Before a new line is read, this 
+  #   buffer is emptied. 
+  #   The holding space is a multi line buffer. It gets it's input
+  #   from the pattern space buffer. 
+  #   Because there is a mechanism to switch the content of the two buffers, 
+  #   the pattern space buffer can actually hold several lines of a file, 
+  #   to which the whole sedScript is applied in one cycle. 
+  #   There is also a mechanism to jump to labels within the sedScript, 
+  #   which can be used to skip certain commands of the sedScript, similar to 
+  #   the goto command in certain languages. 
+  #   SED has no if-else statments, but it has a mechanism to determine lines, 
+  #   to which the commands of the sedScript shall be applied. 
+  #   This is either a "line number from,line number to" range, 
+  #   a "regex from,regex to" range, or just a regex. 
+  #   For certain commands, like substitute "s" or delete "d", it is even
+  #   possible to define both a line number and a regex range.
   # ---------------------------------------------------------------------------
   #doc_end; help_end-----------------------------------------------------------
-  [[ $DEBUG == 'y' ]] && echo "--$LINENO ${BASH_SOURCE[0]}:sed_search_replace()"
+  [[ $DEBUG == 'y' ]] && echo "--$LINENO ${BASH_SOURCE[0]}:sed_wrapper()"
   # ---------------------------------------------------------------------------
   #============================================================================
 
-  echo "entering sed_append_url()"
+  echo "entering sed_wrapper()"
 
+  # INPUT: arguments
   local file="$1"
   local filetmp="$2"
-  local range="$3"
-  local pattern="$4"
-  local search="$5"
-  local replace="$6"
-  local option="$7"
-  local sep="$8"
+  local commandLineOptions="$3"
+  local separator="$4"
+  local addressRange="$5"
+  local regexRange="$6"
+  local command="$7"
+  local commandOptions="$8"
+  local substituteSearch="${9}"
+  local substituteReplace="${10}"
 
+  # sedScript: holds the instructions applied to each line of the file 
+  local sedScript 
+
+  # CHECK: input arguments
   echo "file: $file"
   echo "filetmp: $filetmp"
-  echo "range: $range"
-  echo "pattern: $pattern"
-  echo "search: $search"
-  echo "replace: $replace"
-  echo "option: $option"
-  echo "separator: $sep"
+  echo "commandLineOptions: $commandLineOptions"
+  echo "separator: $separator"
+  echo "addressRange: $addressRange"
+  echo "regexRange: $regexRange"
+  echo "command: $command"
+  echo "commandOptions: $commandOptions"
+  echo "substituteSearch: $substituteSearch"
+  echo "substituteReplace: $substituteReplace"
 
-  local cmd
-  # Input: all variables
-  if [[ -n "$range" ]] && [[ -n "$pattern" ]] && [[ -n "$search" ]] \
-    && [[ -n "$replace" ]] && [[ -n "$option"  ]]; then
 
-    if [[ -n "$sep"  ]]; then
-      cmd="${range}{s${sep}${pattern}${sep}${search}${sep}${replace}${sep}{$option}}"
-    else
-      cmd="$range{s/$pattern/$search/$replace/{$option}}"
-    fi
+  #CHECK: number of arguments
+  if [[ "$#" -ne 10 ]]; then
+    echo "ERROR: number of arguments: $#; but should be 10"
+    return
+  fi
+  echo "number of arguments: $#"
 
-    echo "cmd: $cmd"
-
-  # Input: no options
-  elif [[ -n "$range" ]] && [[ -n "$pattern" ]] \
-    && [[ -n "$search" ]] && [[ -n "$replace" ]]; then
-
-    if [[ -n "$sep"  ]]; then
-      cmd="$range{s${sep}${pattern}${sep}${search}${sep}${replace}${sep}g}"
-    else
-      cmd="$range{s/$pattern/$search/$replace/g}"
-    fi
-
-    echo "cmd: $cmd"
-
-  # Input no pattern, no options
-  elif [[ -n "$range" ]] && [[ -n "$search" ]] && [[ -n "$replace" ]]; then
-  
-    if [[ -n "$sep"  ]]; then
-      cmd="$range{s${sep}${search}${sep}${replace}${sep}g}"
-    else
-      cmd="$range{s/$search/$replace/g}"
-    fi
-  
-    echo "cmd: $cmd"
-
-  # Input no range, no options
-  elif [[ -n "$pattern" ]] && [[ -n "$search" ]] && [[ -n "$replace" ]]; then
-
-  if [[ -n "$sep"  ]]; then
-    cmd="s${sep}${pattern}${sep}${search}${sep}${replace}${sep}g"
-  else
-    cmd="s/$pattern/$search/$replace/g"
+  #EMPTY: empty the file to write to 
+  if [[ -n "$filetmp" ]]; then 
+    echo "---------------------EMPTY begin------------------------------------"
+    true > "$filetmp"
+    echo "---------------------EMPTY end--------------------------------------"
   fi
 
-  echo "cmd: $cmd"
 
-  # Input just search, replace
-  elif [[ -n "$search" ]] && [[ -n "$replace" ]]; then
-    
-    if [[ -n "$sep"  ]]; then
-      cmd="s${sep}${search}${sep}${replace}${sep}g"
-    else
-      cmd="s/$search/$replace/g"
-    fi
-    
-    echo "cmd: $cmd"
-
+  echo "---------------------BUILD_SED_SCIPT begin-----------------------"
+  # Depending on the command used, the SedScript can have different forms:
+  #
+  #   [addressRange] {command  [commandOptions]; command [commandOptions]; ...}
+  #   [regexRange] {command [commandOptions]; command [commandOptions]; ...}
+  # ---------------------------------------------------------------------------
+  # apply default separator, if argument is empty
+  if [[ -z "$separator" ]]; then
+    sep="/"
   else
-
-    echo "something went wrong"
-    return 1
-
+    sep="$separator"
   fi
+
+  case "$command" in
+    a)
+      echo "command: a"
+      if [[ -n "$addressRange" ]]; then
+        sedScript="${addressRange}a $commandOptions"
+      elif [[ -n "$regexRange" ]]; then
+        sedScript="${regexRange}a $commandOptions"
+      else
+        echo "wrong application of command a"
+      fi
+      ;;
+    i)
+      echo "command: i"
+      if [[ -n "$addressRange" ]]; then
+        sedScript="${addressRange}i $commandOptions"
+      elif [[ -n "$regexRange" ]]; then
+        sedScript="${regexRange}i $commandOptions"
+      else
+        echo "wrong application of command i"
+      fi
+      ;;
+    d)
+      echo "command: d"
+      if [[ -n "$addressRange" ]] && [[ -n "$regexRange" ]]; then
+        sedScript="${addressRange}{${regexRange}d}"
+      elif [[ -n "$addressRange" ]]; then
+        sedScript="${addressRange}d $commandOptions"
+      elif [[ -n "$regexRange" ]]; then
+        sedScript="${regexRange}d $commandOptions"
+      else
+        echo "wrong application of command d"
+      fi
+      ;;
+    =)
+      echo "command: ="
+      if [[ -n "$addressRange" ]] && [[ -n "$regexRange" ]]; then
+        sedScript="${addressRange}{${regexRange}=}"
+      elif [[ -n "$addressRange" ]]; then
+        sedScript="${addressRange}= $commandOptions"
+      elif [[ -n "$regexRange" ]]; then
+        sedScript="${regexRange}= $commandOptions"
+      else
+        echo "wrong application of command ="
+      fi
+      ;;
+    p)
+      echo "command: p"
+      if [[ -n "$addressRange" ]] && [[ -n "$regexRange" ]]; then
+        sedScript="${addressRange}{${regexRange}p}"
+      elif [[ -n "$addressRange" ]]; then
+        sedScript="${addressRange}p $commandOptions"
+      elif [[ -n "$regexRange" ]]; then
+        sedScript="${regexRange}p $commandOptions"
+      else
+        echo "wrong application of command p"
+      fi
+      ;;
+    s)
+      echo "command: s"
+      
+      if [[ -n "$substituteSearch" ]] && [[ -n "$substituteReplace" ]]; then
+        if [[ -n "$addressRange" ]] && [[ -n "$regexRange" ]]; then
+          sedScript="${addressRange}{${regexRange}\
+            s${sep}${substituteSearch}${sep}${substituteReplace}${sep}\
+            ${commandOptions}}"
+        elif [[ -n "$addressRange" ]]; then
+          sedScript="${addressRange}\
+            {s${sep}${substituteSearch}${sep}${substituteReplace}${sep}\
+              ${commandOptions}}"
+        elif [[ -n "$regexRange" ]]; then
+          sedScript="${regexRange}\
+            {s${sep}${substituteSearch}${sep}${substituteReplace}${sep}\
+              ${commandOptions}}"
+        else
+          sedScript="\
+            {s${sep}${substituteSearch}${sep}${substituteReplace}${sep}\
+              ${commandOptions}}"
+        fi
+      else
+        echo "wrong application of command s"
+        echo "substituteSearch: $substituteSearch\ 
+          substituteReplace: $substituteReplace"
+      fi
+      ;;
+  esac
+  
+  echo "sedScript: $sedScript"
+  echo "---------------------BUILD_SCRIPT end---------------------------------"
 
   # user interaction: 
   # if the function returns 1, do exit function with return 1
@@ -1553,15 +1707,43 @@ sed_search_replace() {
   fi
   echo "--------------------------------------------------------------"
 
+
+  echo "---------------------SED begin----------------------------------------"
   # apply sed substitution to $file to whole line (g)
   # avoid inline editing by writing into $filetmp
-  sed -E "$cmd" "$file" > "$filetmp"
-  
+  if [[ -n "$filetmp" ]]; then
+    if [[ -n "$commandLineOptions" ]]; then
+      echo "sed_1"
+      sed -E "$commandLineOptions" -e "$sedScript" <"$file" >"$filetmp" 
+    else
+      echo "sed_2"
+      sed -E -e "$sedScript" <"$file" >"$filetmp"
+    fi
+  else
+    if [[ -n "$commandLineOptions" ]]; then
+      echo "sed_3"
+      sed -E "$commandLineOptions" -e "$sedScript" <"$file" 
+    else
+      echo "sed_4"
+      sed -E -e "$sedScript" <"$file"
+    fi
+  fi
+  echo "---------------------SED end------------------------------------------"
+
+
   #DIFF: show differences before and after
-  diff "$file" "$filetmp"
+  if [[ -n "$filetmp" ]]; then 
+    echo "---------------------DIFF begin-------------------------------------"
+    diff -u --color "$file" "$filetmp"
+    echo "---------------------DIFF end---------------------------------------"
+  fi
 
   #MV: move/ overwrite $file with $filetmp
-  mv "$filetmp" "$file"
+  if [[ -n "$filetmp" ]]; then 
+    echo "---------------------MV begin---------------------------------------"
+    mv "$filetmp" "$file"
+    echo "---------------------MV begin---------------------------------------"
+  fi
 
 }
 # -----------------------------------------------------------------------------
@@ -2228,36 +2410,40 @@ function main() {
       fi
       echo "--------------------------------------------------------------"
       
-      # b.) give in the two variables TODO:
+      # b.) GLOBAL variable from command line:
       #shellcheck disable=2153
-      local rng="$RANGE"
+      local commandLineOptions="$COMMAND_LINE_OPTIONS"
       #shellcheck disable=2153
-      local pat="$PATTERN"
+      local separator="$SEPARATOR"
       #shellcheck disable=2153
-      local searchpat="$SEARCH"
+      local addressRange="$ADDRESS_RANGE"
       #shellcheck disable=2153
-      local repl="$REPLACE"
+      local regexRange="$REGEX_RANGE"
       #shellcheck disable=2153
-      local opt="$OPTIONS"
+      local commandOptions="$COMMAND_OPTIONS"
       #shellcheck disable=2153
-      local sep="$SEPARATOR"
+      local substituteSearch="$SUBSTITUTE_SEARCH"
       #shellcheck disable=2153
-      local appurl="$APPENDURL"
-      echo "--$LINENO range: $rng";
-      echo "--$LINENO pattern: $pat";
-      echo "--$LINENO search: $searchpat";
-      echo "--$LINENO replace: $repl";
-      echo "--$LINENO options: $opt";
-      echo "--$LINENO separator: $sep";
-      echo "--$LINENO appendurl: $appurl";
-
+      local substituteReplace="$SUBSTITUTE_REPLACE"
+      #shellcheck disable=2153
+      local appendurl="$APPENDURL"
+      echo "--$LINENO commandLineOptions: $commandLineOptions"
+      echo "--$LINENO separator: $separator"
+      echo "--$LINENO addressRange: $addressRange"
+      echo "--$LINENO regexRange: $regexRange"
+      echo "--$LINENO commandOptions: $commandOptions"
+      echo "--$LINENO substituteSearch: $substituteSearch"
+      echo "--$LINENO substituteReplace: $substituteReplace"
+      echo "--$LINENO appendurl: $appendurl";
+      
       # c.) apply sed to filelist_Home_md 
       #     for each file change the diff will be printed
       #     after every diff there is a user interaction
       local dirbak_Home_md=./bak_Home_md/
       if ! sed_in_files_md "$filelist_Home_md" "$dirbak_Home_md" \
-        "$rng" "$pat" "$searchpat" "$repl" "$opt" "$sep" \
-        "$appurl"; then
+        "$commandLineOptions" "$separator" "$addressRange" "$regexRange" \
+        "$commandOptions" "$substituteSearch" "$substituteReplace" \
+        "$appendurl"; then
         echo "exit: $LINENO"; exit 1 
       fi
 
@@ -2314,36 +2500,40 @@ function main() {
       fi
       echo "--------------------------------------------------------------"
 
-      # b.) give in the two variables TODO:
+      # b.) GLOBAL variable from command line:
       #shellcheck disable=2153
-      local rng="$RANGE"
+      local commandLineOptions="$COMMAND_LINE_OPTIONS"
       #shellcheck disable=2153
-      local pat="$PATTERN"
+      local separator="$SEPARATOR"
       #shellcheck disable=2153
-      local searchpat="$SEARCH"
+      local addressRange="$ADDRESS_RANGE"
       #shellcheck disable=2153
-      local repl="$REPLACE"
+      local regexRange="$REGEX_RANGE"
       #shellcheck disable=2153
-      local opt="$OPTIONS"
+      local commandOptions="$COMMAND_OPTIONS"
       #shellcheck disable=2153
-      local sep="$SEPARATOR"
+      local substituteSearch="$SUBSTITUTE_SEARCH"
       #shellcheck disable=2153
-      local appurl="$APPENDURL"
-      echo "--$LINENO range: $rng";
-      echo "--$LINENO pattern: $pat";
-      echo "--$LINENO search: $searchpat";
-      echo "--$LINENO replace: $repl";
-      echo "--$LINENO options: $opt";
-      echo "--$LINENO separator: $sep";
-      echo "--$LINENO appendurl: $appurl";
+      local substituteReplace="$SUBSTITUTE_REPLACE"
+      #shellcheck disable=2153
+      local appendurl="$APPENDURL"
+      echo "--$LINENO commandLineOptions: $commandLineOptions"
+      echo "--$LINENO separator: $separator"
+      echo "--$LINENO addressRange: $addressRange"
+      echo "--$LINENO regexRange: $regexRange"
+      echo "--$LINENO commandOptions: $commandOptions"
+      echo "--$LINENO substituteSearch: $substituteSearch"
+      echo "--$LINENO substituteReplace: $substituteReplace"
+      echo "--$LINENO appendurl: $appendurl";
 
       # c.) apply sed to filelist_README_md 
       #     for each file change the diff will be printed
       #     after every diff there is a user interaction
       local dirbak_README_md=./bak_README_md/
       if ! sed_in_files_md "$filelist_README_md" "$dirbak_README_md" \
-        "$rng" "$pat" "$searchpat" "$repl" "$opt" "$sep" \
-        "$appurl"; then
+        "$commandLineOptions" "$separator" "$addressRange" "$regexRange" \
+        "$commandOptions" "$substituteSearch" "$substituteReplace" \
+        "$appendurl"; then
         echo "exit: $LINENO"; exit 1 
       fi
 

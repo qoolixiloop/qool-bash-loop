@@ -10,18 +10,18 @@ setlocal fdn=20
 setlocal fen
 silent! normal! zE
 3,14fold
-16,33fold
-39,60fold
-67,89fold
-93,136fold
-138,149fold
-164,196fold
-208,240fold
-let s:l = 1 - ((0 * winheight(0) + 21) / 42)
+17,32fold
+43,64fold
+71,93fold
+97,140fold
+142,153fold
+174,206fold
+218,250fold
+let s:l = 251 - ((96 * winheight(0) + 16) / 33)
 if s:l < 1 | let s:l = 1 | endif
 exe s:l
 normal! zt
-1
+251
 normal! 0
 let &so = s:so_save | let &siso = s:siso_save
 doautoall SessionLoadPost
