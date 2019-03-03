@@ -7,121 +7,7 @@
 
 
 ### ⏳ TL;DR 
-> This site is all about you, getting started with &&& . If you like to find out, what tools and information I prepared for you, then please click on the button below.
->
-> <details>
-> <summary> 📖  read more... </summary>
->
-> ⏳
->
-> #### Why could you profit from the content of this repository?
-> * Because &&&  
-> but &&&  
->
-> * Because &&&  
-> but &&&  
->
-> * Because &&&  
-> but &&&  
->
-> Did you find anything?  
-> Then please read on. 
->   
-> ⏳
->
-> #### How the qoolixiloop repositories intend to make his friends productive
-> * You will get &&&  
-> &&& to become quickly productive.  
->
-> * You will get &&&  
-> &&& .  
->
-> * You will get the links to official reference pages.  
-> So you won't have to click through your web search engine's top ten search results to get your needed "How to".  
->
-> Does this already sound like Christmas?  
-> Then please read on.  
->
-> ⏳
-> </details>
-
-
-
-
-### 🎁 Download my markdown files
-> The files are not yet ready to be shared.  
->
-> <details>
-> <summary> 📖  show the examples </summary>
-> 🎁
->   
-> 1. **&&&:**   
->
->    * &&&
->
-> 2. **&&&:** 
->
-> 3. **&&&:** 
->
-> 🎁
-> </details>
-
-
-
-
-### 📜 Instructions on how to use .vim and .vimrc
-> The reason why &&&. 
-> Please click the button below. The few steps show, how to install and run &&&. It's easy, five steps and you can start writing &&&
->
-> <details>
-> <summary> 📖  show the instructions </summary>
->
-> 📜
->   
->    * Install &&& on Linux Ubuntu with:  
->         $ sudo apt get  
->    
->    * Move to your folder containing your md files with:  
->         $ cd /my_md_directory/  
->    
->    * Start &&& with:  
->         $ grip my_md_file.md  
->    
->    * Open your file with Vim:  
->         $ vim my_md_file.md  
->    
->    * That's it! 
->
-> * &&& 
->
->📜
-</details>
-
-
-
-
-### 🌎 Links
-> To share the links of web pages, which present their content in a clear and easy to read manner is one of the main objectives of my repositories. There is no need to reinvent the wheel, because most of the time there are already excellent resources out there, where the reader can find the needed information. But often, even with the help of one's preferred search engine, one ends up spending one's time with searching instead of working.  
-> By clicking the button below you will see the links of my top &&& sites for &&&. If you still struggle with the syntax, then you may consider &&& as described [here][&&&].
->
-> <details>
-> <summary> 📖  show the links </summary>
->
-> 🌎
->
-> | What the link provides ('Ctrl-click' to open in new tab) | Link to website
-> |:---------------------------------------- | :----------------------------------------| 
-> | `relevant links to websites:`            |
-> | &&&         | [&&&][1]  
-> | &&&         | [&&&][2]  
-> | `relavant links to my wiki pages:`       |
-> | - (empty list)                           |
-> |                                          |
->
-> 🌎
-> </details>
-
-
+> Please click the Wiki link above, where you can find my Bash tutorials. 
 
 
 ### 🗄️ qoolixiloop's repositories
@@ -149,7 +35,7 @@
 > | Links to repositories ('Ctrl-click' to open in new tab)         | Contents
 > |:-------------------------------| :----------------------------------------| 
 > [qool-helloworld-loop][101]      | My personal project descriptons
-> [qool-helloworld-loop.wiki][102] (@) | More general topics
+> [qool-helloworld-loop.wiki][102] | More general topics
 > [qool-angular2-loop][201]        | Client side code of strategy game
 > [qool-angular2-loop.wiki][202]   | Comments and language specific resources
 > [qool-awk-loop][301]             | Code snippets
